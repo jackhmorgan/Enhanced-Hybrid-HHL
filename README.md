@@ -57,7 +57,9 @@ hhl_result = hhl.estimate(problem)
 
 print(hhl_result)
 ```
+## License
 
+This project uses [Apache 2.0 License]([url](https://github.com/jackhmorgan/Enhanced-Hybrid-HHL/blob/main/LICENSE)https://github.com/jackhmorgan/Enhanced-Hybrid-HHL/blob/main/LICENSE)
 
 
 
