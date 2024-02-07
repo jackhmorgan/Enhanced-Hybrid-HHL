@@ -1,12 +1,3 @@
-import __future__
-
-import sys
-import os
-
-# Assuming the parent directory of the tests folder is in your project root
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.insert(0, project_root)
-
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.extensions import RYGate
@@ -23,6 +14,10 @@ def HybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubit
 
     return circ
 
+def CannonicalInversionFunction(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits):
+    from qiskit.circuit.library import ExactReciprocal
+    er = ExactReciprocal(num_clock_qubits, 2*2**-num_clock_qubits, neg_vals=True)
+    return er
 
 def enhanced_angle_processing_practical(eigenvalue_list, 
                                         eigenbasis_projection_list, 
