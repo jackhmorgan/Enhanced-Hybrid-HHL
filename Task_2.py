@@ -9,7 +9,7 @@ from enhanced_hybrid_hhl import HHL, QCL_QPE_IBM, HybridInversion, ideal_preproc
 from qiskit.quantum_info import Statevector
 
 # from qiskit_ibm_provider import IBMProvider
-from qiskit.providers.aer import AerSimulator
+from qiskit_aer import AerSimulator
 
 # provider = IBMProvider(instance='ibm-q-ncsu/nc-state/amplitude-estima')
 # torino = provider.get_backend('ibm_torino')
