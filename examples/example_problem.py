@@ -8,11 +8,22 @@ from enhanced_hybrid_hhl import (HHL,
                                  Lee_preprocessing,
                                  Yalovetsky_preprocessing,
                                  ideal_preprocessing,
-                                 QuantumLinearSystemProblem)
+                                 QuantumLinearSystemProblem,
+                                 ExampleQLSP)
 import numpy as np
 from qiskit.quantum_info import random_hermitian
-
+from qiskit.circuit.library import StatePreparation, HamiltonianGate
+from qiskit.quantum_info import Statevector
 from qiskit_aer import AerSimulator
+from qiskit import transpile
+from qiskit_ibm_provider import IBMProvider
+
+# Save your credentials on disk.
+# IBMProvider.save_account(token='<IBM Quantum API key>')
+
+provider = IBMProvider(instance='ibm-q-ncsu/nc-state/amplitude-estima')
+provider = IBMProvider()
+torino = provider.get_backend('ibm_torino')
 
 simulator = AerSimulator()
 
@@ -40,22 +51,44 @@ def MorganExampleQLSP(eigenvalues: list):
     return QuantumLinearSystemProblem(test_A_matrix, b_vector_example)
 
 
-test_eigenvalues = [-1, -0.6, 0.12222, 1/4, 1/3, 11/32, 3/4, 1]
+test_eigenvalues = [-1, -0.6, -0.4, -1/3, 1/3, 0.4, 0.6, 1]
 problem_A_matrix = np.diag(test_eigenvalues)
-problem_b_vector = np.array([[0], [1], [0], [0], [1], [0], [0], [1]])/np.sqrt(2)
+problem_b_vector = np.array([[0], [1], [0], [0], [0], [1], [1], [0], [0], [0]])/np.sqrt(2)
+
+test_eigenvalues = [-1, -0.65, -0.6, -0.55, -0.5, -0.45, -0.4, -1/3, 1/3, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 1]
+problem_A_matrix = np.diag(test_eigenvalues)
+problem_b_vector = np.array([[0], [1], [0], [0], [0], [0], [0], [0], [0], [0], [1], [0], [0], [0], [0], [0]])/np.sqrt(2)
+
+test_eigenvalues = [-1, -19/24, -0.75, -1/3, 1/3, 11/24, 0.5, 1]
+problem_A_matrix = np.diag(test_eigenvalues)
+problem_b_vector = np.array([[0], [1], [0], [0], [0], [1], [0], [0]])/np.sqrt(2)
+
+
 
 baseline_qubits = 3
 
-problem = QuantumLinearSystemProblem(problem_A_matrix, problem_b_vector)
+problem = QuantumLinearSystemProblem(problem_A_matrix, 
+                                     problem_b_vector
+                                     )
+#problem = ExampleQLSP(0.33)
 
 Cannonical_HHL = HHL(get_result_function='get_fidelity_result',
                      eigenvalue_inversion=CannonicalInversion
                      )
 
-fidelity = Cannonical_HHL.estimate(problem=problem, 
+result = Cannonical_HHL.estimate(problem=problem, 
                                    num_clock_qubits=baseline_qubits,
                                    max_eigenvalue=1)
-print(fidelity)
+fidelity = result.results_processed
+print(np.sqrt(2*(1-fidelity)))
+
+Cannonical_HHL = HHL(get_result_function='get_circuit_depth_result',
+                     eigenvalue_inversion=CannonicalInversion,
+                     backend=torino)
+circuit_depth = Cannonical_HHL.estimate(problem=problem, 
+                                   num_clock_qubits=baseline_qubits,
+                                   max_eigenvalue=1)
+print(circuit_depth.results_processed)
 
 y_preprocessing=Lee_preprocessing(num_eval_qubits=baseline_qubits, backend=simulator, max_eigenvalue=1)
 
@@ -64,18 +97,39 @@ Yalovetsky_H_HHL = HHL(get_result_function='get_fidelity_result',
                        eigenvalue_inversion=HybridInversion
                        )
 
-hybrid_fidelity = Yalovetsky_H_HHL.estimate(problem=problem,
+hybrid_result = Yalovetsky_H_HHL.estimate(problem=problem,
                                             num_clock_qubits=baseline_qubits,
                                             max_eigenvalue=1)
-print(hybrid_fidelity)
+hybrid_fidelity = hybrid_result.results_processed
+print(np.sqrt(2*(1-hybrid_fidelity)))
+
+Yalovetsky_H_HHL = HHL(get_result_function='get_circuit_depth_result',
+                       pre_processing=y_preprocessing.estimate,
+                       eigenvalue_inversion=HybridInversion,
+                       backend=torino)
+
+circuit_depth = Yalovetsky_H_HHL.estimate(problem=problem, 
+                                   num_clock_qubits=baseline_qubits,
+                                   max_eigenvalue=1)
+print(circuit_depth.results_processed)
 
 e_preprocessing=Lee_preprocessing(num_eval_qubits=baseline_qubits+2, backend=simulator, max_eigenvalue=1)
 
 Enhanced_H_HHL = HHL(get_result_function='get_fidelity_result',
-                       pre_processing=y_preprocessing.estimate,
+                       pre_processing=e_preprocessing.estimate,
                        eigenvalue_inversion=EnhancedHybridInversion
                        )
-enhanced_fidelity = Enhanced_H_HHL.estimate(problem=problem,
+enhanced_result = Enhanced_H_HHL.estimate(problem=problem,
                                             num_clock_qubits=baseline_qubits,
                                             max_eigenvalue=1)
-print(enhanced_fidelity)
+enhanced_fidelity = enhanced_result.results_processed
+print(np.sqrt(2*(1-enhanced_fidelity)))
+
+Enhanced_H_HHL = HHL(get_result_function='get_circuit_depth_result',
+                     pre_processing=e_preprocessing.estimate,
+                     eigenvalue_inversion=EnhancedHybridInversion,
+                     backend=torino)
+circuit_depth = Enhanced_H_HHL.estimate(problem=problem, 
+                                   num_clock_qubits=baseline_qubits,
+                                   max_eigenvalue=1)
+print(circuit_depth.results_processed)

@@ -311,6 +311,7 @@ class Lee_preprocessing:
         
         else:
             hamiltonian_simulation = problem.hamiltonian_simulation
+            scale=1
         
 
         # If the state_preparation is not specified in the problem, use the standard StatePreparation

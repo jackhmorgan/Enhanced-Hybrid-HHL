@@ -33,7 +33,9 @@ def EnhancedHybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clo
     quantum circuit implementing a hybrid inversion operation. If the precision of the eigenvalue list is greater than
     num_clock_qubits, then the enhancement is automatically used to calculate the inversion angles.
     """
-    control_state_list, rotation_angle_list = enhanced_angle_processing_practical(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits)
+    control_state_list, rotation_angle_list = enhanced_angle_processing_practical(eigenvalue_list, 
+                                                                                  eigenbasis_projection_list, 
+                                                                                  num_clock_qubits)
     circ = QuantumCircuit(num_clock_qubits+1, name='hybrid_inversion')
 
     for state, angle in zip(control_state_list, rotation_angle_list):
@@ -156,6 +158,9 @@ def enhanced_angle_processing_practical(eigenvalue_list,
     final_amplitude_dictionary = {}
 
     for value, projection in zip(eigenvalue_list, eigenbasis_projection_list):
+
+        if projection==0:
+            continue
 
         state = value*scale*(2**(clock)-1)
 

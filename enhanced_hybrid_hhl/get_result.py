@@ -32,6 +32,51 @@ from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 ionq_provider = IonQProvider(token='W8fkNnlIqaWDP83QCPTnP5HjoELVXMbP')
 ionq_simulator = ionq_provider.get_backend('ionq_simulator')
 
+def get_circuit_depth_result(backend):
+  
+    def get_result(hhl_circ, problem) -> HHL_Result:
+        num_b_qubits = int(np.log2(len(problem.b_vector)))
+
+        circuit = transpile(hhl_circ, backend)
+        
+        result = HHL_Result()
+        result.circuit_results = circuit
+        result.results_processed = circuit.depth()
+        return result
+    return get_result
+
+def get_circuit_depth_result_st(backend, statevector):
+    def SwapTest(num_state_qubits):
+        num_qubits = 2*num_state_qubits+1
+        st_circ = QuantumCircuit(num_qubits)
+        st_circ.h(-1)
+        for i in range(num_state_qubits):
+            st_circ.cswap(-1,i,num_state_qubits+i)
+        st_circ.h(-1)
+        return st_circ
+    def get_result(hhl_circ, problem) -> HHL_Result:
+        num_b_qubits = int(np.log2(len(problem.b_vector)))
+
+        st = SwapTest(num_b_qubits)
+        q_reg = QuantumRegister(st.num_qubits-num_b_qubits)
+        c_reg = ClassicalRegister(1)
+
+        hhl_circ.add_register(q_reg)
+        hhl_circ.add_register(c_reg)
+
+        hhl_circ.prepare_state(statevector, q_reg[:-1])
+        hhl_circ.append(st, list(range(-st.num_qubits,0)))
+        hhl_circ.measure(0,0)
+        hhl_circ.measure(-1,c_reg[0])
+
+        circuit = transpile(hhl_circ, backend)
+        
+        result = HHL_Result()
+        result.circuit_results = circuit
+        result.results_processed = circuit.depth()
+        return result
+    return get_result
+
 def get_ionq_result_hhl(backend, statevector):
     def SwapTest(num_state_qubits):
         num_qubits = 2*num_state_qubits+1
