@@ -1,4 +1,4 @@
- '''
+'''
  Copyright 2023 Jack Morgan
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,7 @@ limitations under the License.
 
 import __future__
 
-from .quantum_linear_system import QuantumLinearSystemProblem, HHL_Result, QuantumLinearSystemSolver
+from quantum_linear_system import QuantumLinearSystemProblem, HHL_Result, QuantumLinearSystemSolver
  
 from qiskit import transpile, QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.quantum_info import partial_trace, Operator

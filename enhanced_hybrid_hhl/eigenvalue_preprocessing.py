@@ -1,4 +1,4 @@
- '''
+'''
  Copyright 2023 Jack Morgan
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,7 @@ limitations under the License.
 
 import __future__
 
-from .quantum_linear_system import QuantumLinearSystemSolver, QuantumLinearSystemProblem
+from quantum_linear_system import QuantumLinearSystemSolver, QuantumLinearSystemProblem
 from qiskit import transpile, QuantumCircuit
 from qiskit.circuit.library import PhaseEstimation, HamiltonianGate, StatePreparation
 from qiskit.quantum_info import Statevector
@@ -43,7 +43,7 @@ def ideal_preprocessing(problem: QuantumLinearSystemProblem):
 
 # The `QCL_QPE_IBM` class implements the Quantum Clock Quantum Phase Estimation (QCL-QPE) algorithm on
 # IBM Quantum devices.
-class QCL_QPE_IBM:
+class Yalovetsky_preprocessing:
     """
         The function initializes the qcl-qpe preprocessing algorithm outlined in [1] with specified parameters.
         
@@ -226,7 +226,7 @@ class QCL_QPE_IBM:
     
 # The `QPE_preprocessing` class is used for preprocessing in Quantum Phase Estimation algorithms,
 # including circuit construction and eigenvalue estimation.
-class QPE_preprocessing:
+class Lee_preprocessing:
     def __init__(self,
                  backend: Backend,
                  num_eval_qubits: int,

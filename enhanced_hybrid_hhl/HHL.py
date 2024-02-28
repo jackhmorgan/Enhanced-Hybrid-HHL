@@ -1,4 +1,4 @@
- '''
+'''
  Copyright 2023 Jack Morgan
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -239,10 +239,11 @@ class HHL(ABC):
         if getattr(self, 'eigenvalue_inversion', None) is not None:
             if getattr(self, 'pre_processing', None) is not None:
                 eigenvalue_list, eigenbasis_projection_list = self.pre_processing(problem)
+                max_eigenvalue = max(eigenvalue_list, key = abs)
+                inversion_circuit = self.eigenvalue_inversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits)
 
-            max_eigenvalue = max(eigenvalue_list, key = abs)
-            inversion_circuit = self.eigenvalue_inversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits)
-
+            else:
+                inversion_circuit = self.eigenvalue_inversion(num_clock_qubits)
         # If Cannonical HHL, use Exact Reciprocal
         else:
             inversion_circuit = ExactReciprocal(num_state_qubits=num_clock_qubits, scaling=2*2**-num_clock_qubits, neg_vals=True)    
