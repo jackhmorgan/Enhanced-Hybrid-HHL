@@ -1,4 +1,4 @@
- '''
+'''
  Copyright 2023 Jack Morgan
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from .quantum_linear_system import QuantumLinearSystemProblem, HHL_Result
+from quantum_linear_system import QuantumLinearSystemProblem, HHL_Result
 from qiskit_algorithms.exceptions import AlgorithmError
 import numpy as np
 from qiskit.quantum_info import Statevector
@@ -57,3 +57,10 @@ def QuantumLinearSystemSolver(problem: QuantumLinearSystemProblem) -> HHL_Result
     result.ideal_x_statevector = ideal_x_statevector
     return result
 pass
+
+if __name__ == 'main':
+    A = np.array([[1,0.33],[0.33,1]])
+    b = [1,0]
+    example_problem = QuantumLinearSystemProblem(A_matrix = a,
+                                                 b_vector = b)
+    solution = QuantumLinearSystemSolver(example_problem)

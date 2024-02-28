@@ -1,4 +1,4 @@
- '''
+'''
  Copyright 2023 Jack Morgan
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,20 @@ from qiskit import QuantumCircuit
 from qiskit.extensions import RYGate
 
 def HybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits) -> QuantumCircuit:
+    """
+    The function `HybridInversion` constructs a quantum circuit for hybrid inversion based on given
+    eigenvalues, eigenbasis projections, and number of clock qubits.
     
+    :param eigenvalue_list: The `eigenvalue_list` parameter contains a list of eigenvalues
+    relevant to the linear system.
+    :param eigenbasis_projection_list: The `eigenbasis_projection_list` contains the
+    projections of the b vector onto their respective eigenvectors
+    :param num_clock_qubits: The `num_clock_qubits` parameter represents the number of clock qubits in
+    the quantum circuit. 
+    :return: The function `HybridInversion` is returning a `QuantumCircuit` object that represents a
+    quantum circuit implementing a hybrid inversion operation. If the precision of the eigenvalue list is greater than
+    num_clock_qubits, then the enhancement is automatically used to calculate the inversion angles.
+    """
     control_state_list, rotation_angle_list = enhanced_angle_processing_practical(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits)
     circ = QuantumCircuit(num_clock_qubits+1, name='hybrid_inversion')
 
@@ -30,15 +43,72 @@ def HybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubit
 
     return circ
 
-def CannonicalInversionFunction(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits):
+def CannonicalInversion(num_clock_qubits) -> QuantumCircuit:
+    """
+    The function `CannonicalInversion` creates a quantum circuit for performing canonical inversion on a
+    specified number of clock qubits.
+    
+    :param num_clock_qubits: The `num_clock_qubits` parameter represents the number of clock qubits in
+    the quantum circuit. This parameter is used to determine the size of the quantum circuit and the
+    operations to be performed on it
+    :return: A QuantumCircuit named 'hybrid_inversion' with controlled RY gates applied for each state
+    in the specified number of clock qubits.
+    """
+    
+    circ = QuantumCircuit(num_clock_qubits+1, name='hybrid_inversion')
+
+    for state in range(2**num_clock_qubits):
+        value = state
+        if value >= (2**(num_clock_qubits-1)):
+            value = state - (2**(num_clock_qubits))
+        angle = 2*np.arcsin(1/value)
+        gate = RYGate(angle).control(num_ctrl_qubits=num_clock_qubits, label='egn_inv', ctrl_state=state)
+        circ.append(gate, circ.qubits)
+
+    return circ
+
+def GrayCodeInversion(num_clock_qubits):
+    """
+    The function `GrayCodeInversion` returns an ExactReciprocal object with specified parameters.
+    
+    :param num_clock_qubits: The `num_clock_qubits` parameter represents the number of qubits used in
+    the quantum circuit. In this context, it is used to create an `ExactReciprocal` circuit from the
+    Qiskit library. This circuit is designed to perform the reciprocal operation with a specified number
+    of qubits
+    :return: The function `GrayCodeInversion` is returning an instance of the `ExactReciprocal` class
+    from the Qiskit library.
+    """
     from qiskit.circuit.library import ExactReciprocal
     er = ExactReciprocal(num_clock_qubits, 2*2**-num_clock_qubits, neg_vals=True)
     return er
 
-def enhanced_angle_processing_practical(eigenvalue_list, 
+def enhanced_angle_processing_practical(eigenvalue_list,
                                         eigenbasis_projection_list, 
                                         num_clock_qubits, 
                                         probability_threshold=0) -> tuple((list[int], list[float])):
+    """
+    The function `enhanced_angle_processing_practical` calculates control state and rotation angles
+    based on eigenvalues and eigenbasis projections.
+    
+    :param eigenvalue_list: Eigenvalues of a quantum state represented as a list of complex numbers
+    :param eigenbasis_projection_list: The `eigenbasis_projection_list` parameter in the
+    `enhanced_angle_processing_practical` function represents the list of projections of the eigenbasis
+    onto the quantum state. Each element in this list corresponds to the projection of the corresponding
+    eigenvalue onto the quantum state
+    :param num_clock_qubits: The `num_clock_qubits` parameter represents the number of qubits used for
+    to represent the eigenvalues. This parameter is used in the
+    `enhanced_angle_processing_practical` function to calculate certain scaling factors and perform
+    quantum operations based on the number of clock qubits provided
+    :param probability_threshold: The `probability_threshold` parameter in the
+    `enhanced_angle_processing_practical` function is a threshold value that determines whether a
+    particular state and its corresponding rotation angle should be included in the final output. If the
+    product of the sum of probabilities for a state and its final amplitude is greater than the `,
+    defaults to 0 (optional)
+    :return: The function `enhanced_angle_processing_practical` returns a tuple containing two lists:
+    `control_state_list` and `rotation_angle_list`. The `control_state_list` contains the control states
+    for the quantum circuit, and the `rotation_angle_list` contains the rotation angles corresponding to
+    each control state.
+    """
     
     clock = num_clock_qubits
     scale = abs((0.5-2**-clock)/abs(max(eigenvalue_list, key=abs)))
