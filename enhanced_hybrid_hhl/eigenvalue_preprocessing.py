@@ -16,7 +16,7 @@ limitations under the License.
 
 import __future__
 
-from quantum_linear_system import QuantumLinearSystemSolver, QuantumLinearSystemProblem
+from .quantum_linear_system import QuantumLinearSystemSolver, QuantumLinearSystemProblem
 from qiskit import transpile, QuantumCircuit
 from qiskit.circuit.library import PhaseEstimation, HamiltonianGate, StatePreparation
 from qiskit.quantum_info import Statevector

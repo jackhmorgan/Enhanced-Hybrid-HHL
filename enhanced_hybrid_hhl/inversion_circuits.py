@@ -58,6 +58,8 @@ def CannonicalInversion(num_clock_qubits) -> QuantumCircuit:
     circ = QuantumCircuit(num_clock_qubits+1, name='hybrid_inversion')
 
     for state in range(2**num_clock_qubits):
+        if state == 0:
+            continue
         value = state
         if value >= (2**(num_clock_qubits-1)):
             value = state - (2**(num_clock_qubits))

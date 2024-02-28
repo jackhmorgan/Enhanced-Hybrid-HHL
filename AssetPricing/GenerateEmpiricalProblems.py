@@ -3,15 +3,11 @@ import __future__
 import sys
 import os
 
-# Assuming the parent directory of the tests folder is in your project root
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.insert(0, project_root)
-
 import pandas as pd
 import numpy as np
 from numpy.typing import ArrayLike
 
-from .quantum_linear_system import QuantumLinearSystemProblem as QLSP
+from .enhanced_hybrid_hhl.quantum_linear_system import QuantumLinearSystemProblem as QLSP
 
 def GenerateEmpiricalProblems(utility_function: str, gamma:int, size:int = 4):
     """
@@ -167,4 +163,6 @@ def Generate_D_Minus_E_problem(utility_function: str, gamma: int, size: int):
     b_stacked = np.vstack((b, np.zeros((len(b),1))))
     return QLSP(A_matrix=ep.A_matrix, b_vector=b_stacked)
 
+if __name__ == 'main':
+    GenerateEmpiricalProblems('IES', 2, 4)
 

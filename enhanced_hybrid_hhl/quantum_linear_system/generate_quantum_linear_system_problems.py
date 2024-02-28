@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from quantum_linear_system import QuantumLinearSystemProblem
+from .quantum_linear_system import QuantumLinearSystemProblem
 from qiskit.quantum_info import random_hermitian
 import numpy as np
 

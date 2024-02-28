@@ -14,20 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from HHL import HHL
-from inversion_circuits import HybridInversion
-from quantum_linear_system import RandomQLSP, ExampleQLSP, QuantumLinearSystemSolver, QuantumLinearSystemProblem, HHL_Result
-from eigenvalue_preprocessing import QPE_preprocessing, QCL_QPE_IBM, ideal_preprocessing
+from .HHL import HHL
+from .inversion_circuits import HybridInversion, CannonicalInversion, GrayCodeInversion
+from .quantum_linear_system import RandomQLSP, ExampleQLSP, QuantumLinearSystemSolver, QuantumLinearSystemProblem, HHL_Result
+from .eigenvalue_preprocessing import Lee_preprocessing, Yalovetsky_preprocessing, ideal_preprocessing
 
 __all__ = [
     "HHL",
     "HybridInversion",
+    "CannonicalInversion",
+    "GrayCodeInversion"
     "RandomQLSP",
     "ExampleQLSP",
     "QuantumLinearSystemSolver",
     "QuantumLinearSystemProblem",
     "HHL_Result",
-    "QPE_preprocessing",
-    "QCL_QPE_IBM",
+    "Lee_preprocessing",
+    "Yalovetsky_preprocessing",
     "ideal_preprocessing"
 ]

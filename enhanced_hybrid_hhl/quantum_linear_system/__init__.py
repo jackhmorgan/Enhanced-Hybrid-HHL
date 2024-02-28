@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-from generate_quantum_linear_system_problems import RandomQLSP, ExampleQLSP
-from QuantumLinearSystemSolver import QuantumLinearSystemSolver
-from quantum_linear_system import QuantumLinearSystemProblem, HHL_Result
+from .generate_quantum_linear_system_problems import RandomQLSP, ExampleQLSP
+from .QuantumLinearSystemSolver import QuantumLinearSystemSolver
+from .quantum_linear_system import QuantumLinearSystemProblem, HHL_Result
 
 __all__ = [
     "RandomQLSP",
