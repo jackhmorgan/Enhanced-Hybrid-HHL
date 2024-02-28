@@ -38,7 +38,7 @@ def MorganExampleQLSP(eigenvalues: list):
 
     return QuantumLinearSystemProblem(test_A_matrix, b_vector_example)
 
-problem = MorganExampleQLSP([-1, 1/3])
+problem = MorganExampleQLSP([-1, 11/16])
 
 Cannonical_HHL = HHL(get_result_function='get_fidelity_result',
                      eigenvalue_inversion=CannonicalInversion

@@ -25,7 +25,7 @@ from qiskit_algorithms import AlgorithmError
 
 from qiskit.circuit.library import ExactReciprocal
 from qiskit.providers import Backend
-from .quantum_linear_system.quantum_linear_system import QuantumLinearSystemProblem as QLSP
+from .quantum_linear_system import QuantumLinearSystemProblem as QLSP
 from .get_result import get_swap_test_result, get_fidelity_result, get_simulator_result, get_ionq_result_hhl
 from abc import ABC
 from typing import Callable, Union

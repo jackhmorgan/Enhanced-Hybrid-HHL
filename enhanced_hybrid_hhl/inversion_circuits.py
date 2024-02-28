@@ -59,6 +59,8 @@ def CannonicalInversion(num_clock_qubits) -> QuantumCircuit:
 
     for state in range(2**num_clock_qubits):
         value = state
+        if value == 0:
+            continue
         if value >= (2**(num_clock_qubits-1)):
             value = state - (2**(num_clock_qubits))
         angle = 2*np.arcsin(1/value)
