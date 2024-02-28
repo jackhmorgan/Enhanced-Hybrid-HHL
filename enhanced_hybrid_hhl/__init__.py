@@ -15,12 +15,13 @@ limitations under the License.
 '''
 
 from .HHL import HHL
-from .inversion_circuits import HybridInversion, CannonicalInversion, GrayCodeInversion
+from .inversion_circuits import EnhancedHybridInversion, HybridInversion, CannonicalInversion, GrayCodeInversion
 from .quantum_linear_system import RandomQLSP, ExampleQLSP, QuantumLinearSystemSolver, QuantumLinearSystemProblem, HHL_Result
 from .eigenvalue_preprocessing import Lee_preprocessing, Yalovetsky_preprocessing, ideal_preprocessing
 
 __all__ = [
     "HHL",
+    "EnhancedHybridInversion",
     "HybridInversion",
     "CannonicalInversion",
     "GrayCodeInversion",

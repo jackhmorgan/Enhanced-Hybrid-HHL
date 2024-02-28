@@ -2,10 +2,12 @@ import sys
 sys.path.append('C:/Users/19899/Documents/HHL/HybridInversion/Enhanced-Hybrid-HHL')
 
 from enhanced_hybrid_hhl import (HHL, 
+                                 EnhancedHybridInversion,
                                  HybridInversion,
                                  CannonicalInversion,
                                  Lee_preprocessing,
                                  Yalovetsky_preprocessing,
+                                 ideal_preprocessing,
                                  QuantumLinearSystemProblem)
 import numpy as np
 from qiskit.quantum_info import random_hermitian
@@ -37,30 +39,43 @@ def MorganExampleQLSP(eigenvalues: list):
 
     return QuantumLinearSystemProblem(test_A_matrix, b_vector_example)
 
-problem = MorganExampleQLSP([-1, 11/16])
+
+test_eigenvalues = [-1, -0.6, 0.12222, 1/4, 1/3, 11/32, 3/4, 1]
+problem_A_matrix = np.diag(test_eigenvalues)
+problem_b_vector = np.array([[0], [1], [0], [0], [1], [0], [0], [1]])/np.sqrt(2)
+
+baseline_qubits = 3
+
+problem = QuantumLinearSystemProblem(problem_A_matrix, problem_b_vector)
 
 Cannonical_HHL = HHL(get_result_function='get_fidelity_result',
                      eigenvalue_inversion=CannonicalInversion
                      )
 
-fidelity = Cannonical_HHL.estimate(problem=problem, max_eigenvalue=1)
+fidelity = Cannonical_HHL.estimate(problem=problem, 
+                                   num_clock_qubits=baseline_qubits,
+                                   max_eigenvalue=1)
 print(fidelity)
 
-y_preprocessing=Lee_preprocessing(num_eval_qubits=4, backend=simulator, max_eigenvalue=1)
+y_preprocessing=Lee_preprocessing(num_eval_qubits=baseline_qubits, backend=simulator, max_eigenvalue=1)
 
 Yalovetsky_H_HHL = HHL(get_result_function='get_fidelity_result',
                        pre_processing=y_preprocessing.estimate,
                        eigenvalue_inversion=HybridInversion
                        )
 
-hybrid_fidelity = Yalovetsky_H_HHL.estimate(problem=problem)
+hybrid_fidelity = Yalovetsky_H_HHL.estimate(problem=problem,
+                                            num_clock_qubits=baseline_qubits,
+                                            max_eigenvalue=1)
 print(hybrid_fidelity)
 
-e_preprocessing=Lee_preprocessing(num_eval_qubits=6, backend=simulator, max_eigenvalue=1)
+e_preprocessing=Lee_preprocessing(num_eval_qubits=baseline_qubits+2, backend=simulator, max_eigenvalue=1)
 
 Enhanced_H_HHL = HHL(get_result_function='get_fidelity_result',
                        pre_processing=y_preprocessing.estimate,
-                       eigenvalue_inversion=HybridInversion
+                       eigenvalue_inversion=EnhancedHybridInversion
                        )
-enhanced_fidelity = Enhanced_H_HHL.estimate(problem=problem)
+enhanced_fidelity = Enhanced_H_HHL.estimate(problem=problem,
+                                            num_clock_qubits=baseline_qubits,
+                                            max_eigenvalue=1)
 print(enhanced_fidelity)

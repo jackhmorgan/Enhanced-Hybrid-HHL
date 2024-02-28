@@ -18,7 +18,8 @@ import __future__
 
 from .quantum_linear_system import QuantumLinearSystemSolver, QuantumLinearSystemProblem
 from qiskit import transpile, QuantumCircuit
-from qiskit.circuit.library import PhaseEstimation, HamiltonianGate, StatePreparation
+from qiskit.extensions import HamiltonianGate
+from qiskit.circuit.library import PhaseEstimation, StatePreparation
 from qiskit.quantum_info import Statevector
 from qiskit_algorithms import AlgorithmError
 from qiskit.providers import Backend
@@ -269,7 +270,7 @@ class Lee_preprocessing:
         circuit = QuantumCircuit(self.num_eval_qubits+hamiltonian_simulation.num_qubits, self.num_eval_qubits)
         circuit.append(state_preparation, range(self.num_eval_qubits, circuit.num_qubits))
         circuit.append(PhaseEstimation(self.num_eval_qubits, hamiltonian_simulation), circuit.qubits)
-        circuit.measure(range(self.num_eval_qubits), range(self.num_eval_qubits))
+        circuit.measure(list(range(self.num_eval_qubits))[::-1], range(self.num_eval_qubits))
         return circuit
     
     def get_result_function(self, backend):
