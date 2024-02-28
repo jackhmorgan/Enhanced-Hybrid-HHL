@@ -230,7 +230,7 @@ class HHL_Result(AlgorithmResult):
     @property
     def control_state_list(self) -> list[int]:
         """Return the control states used for eigenvalue inversion."""
-        return self._confidence_interval
+        return self._control_state_list
 
     @control_state_list.setter
     def control_state_list(self, control_state_list: list[int]) -> None:

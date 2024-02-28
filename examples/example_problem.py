@@ -2,7 +2,6 @@ import sys
 sys.path.append('C:/Users/19899/Documents/HHL/HybridInversion/Enhanced-Hybrid-HHL')
 
 from enhanced_hybrid_hhl import (HHL, 
-                                 RandomQLSP, 
                                  HybridInversion,
                                  CannonicalInversion,
                                  Lee_preprocessing,
@@ -47,7 +46,7 @@ Cannonical_HHL = HHL(get_result_function='get_fidelity_result',
 fidelity = Cannonical_HHL.estimate(problem=problem, max_eigenvalue=1)
 print(fidelity)
 
-y_preprocessing=Yalovetsky_preprocessing(clock=4, backend=simulator)
+y_preprocessing=Lee_preprocessing(num_eval_qubits=4, backend=simulator, max_eigenvalue=1)
 
 Yalovetsky_H_HHL = HHL(get_result_function='get_fidelity_result',
                        pre_processing=y_preprocessing.estimate,
@@ -57,7 +56,7 @@ Yalovetsky_H_HHL = HHL(get_result_function='get_fidelity_result',
 hybrid_fidelity = Yalovetsky_H_HHL.estimate(problem=problem)
 print(hybrid_fidelity)
 
-e_preprocessing=Yalovetsky_preprocessing(clock=6, backend=simulator)
+e_preprocessing=Lee_preprocessing(num_eval_qubits=6, backend=simulator, max_eigenvalue=1)
 
 Enhanced_H_HHL = HHL(get_result_function='get_fidelity_result',
                        pre_processing=y_preprocessing.estimate,

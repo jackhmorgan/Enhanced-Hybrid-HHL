@@ -98,7 +98,7 @@ def get_fidelity_result(hhl_circuit: QuantumCircuit, problem: QuantumLinearSyste
     ideal_x_operator = QuantumLinearSystemSolver(problem).ideal_x_statevector.to_operator()
 
     # qubits to remove in the partial trace of the simulated statevector. 
-    trace_qubits = list(range(1+hhl_circuit.num_qubits-ideal_x_operator.dim[0]))
+    trace_qubits = list(range(hhl_circuit.num_qubits-ideal_x_operator.num_qubits))
 
     # save statevector if the inversion was successful
     with hhl_circuit.if_test((0,1)) as passed:
