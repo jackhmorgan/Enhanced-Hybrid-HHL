@@ -18,15 +18,14 @@ import __future__
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
 import numpy as np
 
-from qiskit.circuit.library import PhaseEstimation, StatePreparation
-from qiskit.extensions import HamiltonianGate
+from qiskit.circuit.library import PhaseEstimation, StatePreparation, HamiltonianGate
 from qiskit.quantum_info import Statevector
 from qiskit_algorithms import AlgorithmError
 
 from qiskit.circuit.library import ExactReciprocal
 from qiskit.providers import Backend
-from .quantum_linear_system.quantum_linear_system import QuantumLinearSystemProblem as QLSP
-from .get_result import get_swap_test_result, get_fidelity_result, get_simulator_result, get_ionq_result_hhl
+from .quantum_linear_system import QuantumLinearSystemProblem as QLSP
+from .get_result import get_session_result, get_circuit_depth_result, get_circuit_depth_result_st, get_swap_test_result, get_fidelity_result, get_simulator_result, get_ionq_result_hhl
 from abc import ABC
 from typing import Callable, Union
 
@@ -121,6 +120,11 @@ class HHL(ABC):
 
     def _get_result_type(self, get_result_name, **kwargs):
         ''' Import a callable from get_result.py that inputs the hhl circuit and outputs an hhl result.'''
+        if get_result_name == 'get_circuit_depth_result':
+            return get_circuit_depth_result(kwargs['backend'])
+
+        if get_result_name == 'get_circuit_depth_result_st':
+            return get_circuit_depth_result_st(kwargs['backend'], kwargs['statevector'])
 
         if get_result_name == 'get_swaptest_result':
             return get_swap_test_result(kwargs['backend'], kwargs['statevector'])
@@ -134,6 +138,9 @@ class HHL(ABC):
         if get_result_name == 'get_fidelity_result':
             return get_fidelity_result
         
+        if get_result_name == 'get_session_result':
+            return get_session_result(kwargs['session'], kwargs['statevector'])
+
         else:
             if 'statevector' in kwargs:
                 if 'backend' in kwargs:
@@ -208,6 +215,7 @@ class HHL(ABC):
         # step 5 if logic is not supported
         else:
             circ.append(qpe.inverse(), clock_reg[:]+b_reg[:])
+            circ.measure(0,0)
         return circ
         
         
@@ -217,6 +225,7 @@ class HHL(ABC):
                  num_clock_qubits: Union[int, None] = 3,
                  max_eigenvalue: Union[float, None] = None,
                  quantum_conditional_logic: bool = True,
+                 **kwargs
                  ):
         r''' 
         Run HHL algorithm with specified preprocessing and circuit construction.
@@ -239,8 +248,12 @@ class HHL(ABC):
         if getattr(self, 'eigenvalue_inversion', None) is not None:
             if getattr(self, 'pre_processing', None) is not None:
                 eigenvalue_list, eigenbasis_projection_list = self.pre_processing(problem)
-                max_eigenvalue = max(eigenvalue_list, key = abs)
-                inversion_circuit = self.eigenvalue_inversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits)
+                if max_eigenvalue == None:
+                    max_eigenvalue = max(eigenvalue_list, key = abs)
+                elif not max_eigenvalue in eigenvalue_list:
+                    eigenvalue_list.append(max_eigenvalue)
+                    eigenbasis_projection_list.append(0)
+                inversion_circuit = self.eigenvalue_inversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits, **kwargs)
 
             else:
                 inversion_circuit = self.eigenvalue_inversion(num_clock_qubits)

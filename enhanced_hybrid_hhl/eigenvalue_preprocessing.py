@@ -16,12 +16,14 @@ limitations under the License.
 
 import __future__
 
-from quantum_linear_system import QuantumLinearSystemSolver, QuantumLinearSystemProblem
+from .quantum_linear_system import QuantumLinearSystemSolver, QuantumLinearSystemProblem
 from qiskit import transpile, QuantumCircuit
-from qiskit.circuit.library import PhaseEstimation, HamiltonianGate, StatePreparation
+from qiskit.circuit.library import HamiltonianGate
+from qiskit.circuit.library import PhaseEstimation, StatePreparation
 from qiskit.quantum_info import Statevector
 from qiskit_algorithms import AlgorithmError
 from qiskit.providers import Backend
+from qiskit_ibm_runtime import Sampler
 import numpy as np
 
 def ideal_preprocessing(problem: QuantumLinearSystemProblem):
@@ -228,9 +230,9 @@ class Yalovetsky_preprocessing:
 # including circuit construction and eigenvalue estimation.
 class Lee_preprocessing:
     def __init__(self,
-                 backend: Backend,
                  num_eval_qubits: int,
                  max_eigenvalue: float,
+                 **kwargs
                  ):
         """
         The above code defines a class with methods for estimating eigenvalues and eigenbasis projection of a
@@ -247,7 +249,7 @@ class Lee_preprocessing:
         """
         self.num_eval_qubits = num_eval_qubits
         self.max_eigenvalue = max_eigenvalue
-        self.get_result = self.get_result_function(backend)
+        self.get_result = self.get_result_function(kwargs)
 
     def construct_circuit(self, 
                           hamiltonian_simulation: QuantumCircuit,
@@ -269,10 +271,10 @@ class Lee_preprocessing:
         circuit = QuantumCircuit(self.num_eval_qubits+hamiltonian_simulation.num_qubits, self.num_eval_qubits)
         circuit.append(state_preparation, range(self.num_eval_qubits, circuit.num_qubits))
         circuit.append(PhaseEstimation(self.num_eval_qubits, hamiltonian_simulation), circuit.qubits)
-        circuit.measure(range(self.num_eval_qubits), range(self.num_eval_qubits))
+        circuit.measure(list(range(self.num_eval_qubits))[::-1], range(self.num_eval_qubits))
         return circuit
     
-    def get_result_function(self, backend):
+    def get_result_function(self, kwargs):
         """
         The function `get_result_function` takes a backend as input and returns a function that
         preprocesses a circuit, transpiles it using the backend, runs it on an ionq simulator, and
@@ -282,11 +284,33 @@ class Lee_preprocessing:
         It could be a specific quantum device or a simulator
         :return: The function `get_result_preprocessing` is being returned.
         """
-        def get_result_preprocessing(circ):
-            transp = transpile(circ, backend)
-            result = backend.run(transp).result()
-            return result
-        return get_result_preprocessing
+        if 'backend' in kwargs.keys():
+            backend = kwargs['backend']
+            def get_result_preprocessing(circ):
+                transp = transpile(circ, backend)
+                print(transp.depth())
+                result = backend.run(transp).result()
+                counts = result.get_counts()
+                tot = sum(counts.values())
+                result_dict = {(int(key,2) if key[0]=='0' else (int(key,2) - (2**(len(key))))) : value / tot for key, value in counts.items()}
+       
+                return result_dict
+            return get_result_preprocessing
+        if 'session' in kwargs.keys():
+            session = kwargs['session']
+            sampler = Sampler(session)
+            backend = session.service.get_backend(session.backend())
+            def get_session_result_preprocessing(circ):
+                max_key = 2**circ.num_clbits 
+                transp = transpile(circ, backend)
+                print('circuit depth = ', transp.depth())
+                result = sampler.run(transp).result()
+                
+                result_dict = {(key if 2*key<max_key else (key - max_key)) : value for key, value in result.quasi_dists[0].items()}
+       
+                return result_dict
+            return get_session_result_preprocessing
+
     
     def estimate(self, problem):
         """
@@ -310,6 +334,7 @@ class Lee_preprocessing:
         
         else:
             hamiltonian_simulation = problem.hamiltonian_simulation
+            scale=1
         
 
         # If the state_preparation is not specified in the problem, use the standard StatePreparation
@@ -324,12 +349,7 @@ class Lee_preprocessing:
         # Construct circuit
 
         circ = self.construct_circuit(hamiltonian_simulation, state_preparation)
-        result = self.get_result(circ)
-
-        # Return formatted results
-        counts = result.get_counts()
-        tot = sum(counts.values())
-        result_dict = {(int(key,2) if key[0]=='0' else (int(key,2) - (2**(len(key))))) : value / tot for key, value in counts.items()}
+        result_dict = self.get_result(circ)
         min_prob = 2**-self.num_eval_qubits
         eigenvalue_list = [eig/(scale*2**(self.num_eval_qubits)) for eig in result_dict.keys() if result_dict[eig] > min_prob]
         eigenbasis_projection_list = [result_dict[eig] for eig in result_dict.keys() if result_dict[eig] > min_prob]

@@ -16,7 +16,39 @@ limitations under the License.
 
 import numpy as np
 from qiskit import QuantumCircuit
-from qiskit.extensions import RYGate
+from qiskit.circuit.library import RYGate
+
+def EnhancedHybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits, **kwargs) -> QuantumCircuit:
+    """
+    The function `HybridInversion` constructs a quantum circuit for hybrid inversion based on given
+    eigenvalues, eigenbasis projections, and number of clock qubits.
+    
+    :param eigenvalue_list: The `eigenvalue_list` parameter contains a list of eigenvalues
+    relevant to the linear system.
+    :param eigenbasis_projection_list: The `eigenbasis_projection_list` contains the
+    projections of the b vector onto their respective eigenvectors
+    :param num_clock_qubits: The `num_clock_qubits` parameter represents the number of clock qubits in
+    the quantum circuit. 
+    :return: The function `HybridInversion` is returning a `QuantumCircuit` object that represents a
+    quantum circuit implementing a hybrid inversion operation. If the precision of the eigenvalue list is greater than
+    num_clock_qubits, then the enhancement is automatically used to calculate the inversion angles.
+    """
+    probability_threshold = 0
+    if 'probability_threshold' in kwargs.keys():
+        probability_threshold = kwargs['probability_threshold']
+    
+    control_state_list, rotation_angle_list = enhanced_angle_processing_practical(eigenvalue_list, 
+                                                                                  eigenbasis_projection_list, 
+                                                                                  num_clock_qubits,
+                                                                                  probability_threshold=probability_threshold)
+    circ = QuantumCircuit(num_clock_qubits+1, name='hybrid_inversion')
+
+    for state, angle in zip(control_state_list, rotation_angle_list):
+
+        gate = RYGate(angle).control(num_ctrl_qubits=num_clock_qubits, label='egn_inv', ctrl_state=state)
+        circ.append(gate, circ.qubits)
+
+    return circ
 
 def HybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits) -> QuantumCircuit:
     """
@@ -33,15 +65,25 @@ def HybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubit
     quantum circuit implementing a hybrid inversion operation. If the precision of the eigenvalue list is greater than
     num_clock_qubits, then the enhancement is automatically used to calculate the inversion angles.
     """
-    control_state_list, rotation_angle_list = enhanced_angle_processing_practical(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits)
+
+    scale = abs((0.5-2**-num_clock_qubits)/abs(max(eigenvalue_list, key=abs)))
+
+    eigenvalues = [eigen for i, eigen in enumerate(eigenvalue_list) if 0 < abs(eigen) < eigenbasis_projection_list[i]*(2**num_clock_qubits)]
+    control_state_list = [round(value*scale*(2**(num_clock_qubits)-1)) for value in eigenvalues]
     circ = QuantumCircuit(num_clock_qubits+1, name='hybrid_inversion')
 
-    for state, angle in zip(control_state_list, rotation_angle_list):
+    for state in control_state_list:
+        if state == 0:
+            continue
+        angle = 2*np.arcsin(1/state)
 
+        if state <= 0:
+            state = round(state + (2**num_clock_qubits))
         gate = RYGate(angle).control(num_ctrl_qubits=num_clock_qubits, label='egn_inv', ctrl_state=state)
         circ.append(gate, circ.qubits)
 
     return circ
+
 
 def CannonicalInversion(num_clock_qubits) -> QuantumCircuit:
     """
@@ -59,6 +101,8 @@ def CannonicalInversion(num_clock_qubits) -> QuantumCircuit:
 
     for state in range(2**num_clock_qubits):
         value = state
+        if value == 0:
+            continue
         if value >= (2**(num_clock_qubits-1)):
             value = state - (2**(num_clock_qubits))
         angle = 2*np.arcsin(1/value)
@@ -113,12 +157,15 @@ def enhanced_angle_processing_practical(eigenvalue_list,
     clock = num_clock_qubits
     scale = abs((0.5-2**-clock)/abs(max(eigenvalue_list, key=abs)))
     
-    constant = abs(min(eigenvalue_list, key=abs))
+    constant = 1
     
     probability_dictionary = {}
     final_amplitude_dictionary = {}
 
     for value, projection in zip(eigenvalue_list, eigenbasis_projection_list):
+
+        if projection==0:
+            continue
 
         state = value*scale*(2**(clock)-1)
 
@@ -148,7 +195,7 @@ def enhanced_angle_processing_practical(eigenvalue_list,
         
         ave_eigenvalue = np.average(list(vectors.keys()), weights = list(vectors.values()))
         final_amplitude = constant / ave_eigenvalue
-        if sum(vectors.values())*final_amplitude > probability_threshold:
+        if abs(sum(vectors.values())*final_amplitude) > probability_threshold:
             amplitude_dictionary[state] = final_amplitude
 
     control_state_list, rotation_angle_list = [], []

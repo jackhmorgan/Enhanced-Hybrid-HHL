@@ -9,12 +9,11 @@ sys.path.insert(0, project_root)
 
 import unittest
 import numpy as np
-from .get_result import get_fidelity_result
-from .eigenvalue_preprocessing import ideal_preprocessing
-from .inversion_circuits import HybridInversion
-from .QuantumLinearSystemProblem import QuantumLinearSystemProblem
-from ddt import data
-from HHL import HHL
+from enhanced_hybrid_hhl import (get_fidelity_result,
+                                 ideal_preprocessing,
+                                 HybridInversion,
+                                 QuantumLinearSystemProblem,
+                                 HHL)
 
 class TestHHL(unittest.TestCase):
     '''Test HHL'''

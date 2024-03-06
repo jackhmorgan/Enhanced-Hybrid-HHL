@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-from quantum_linear_system import QuantumLinearSystemProblem, HHL_Result
+from .quantum_linear_system import QuantumLinearSystemProblem, HHL_Result
 from qiskit_algorithms.exceptions import AlgorithmError
 import numpy as np
 from qiskit.quantum_info import Statevector
