@@ -1,5 +1,7 @@
 import sys
 sys.path.append('C:/Users/19899/Documents/HHL/HybridInversion/Enhanced-Hybrid-HHL')
+import json
+file_name = 'torino_examples.json'
 
 from enhanced_hybrid_hhl import (HHL, 
                                  EnhancedHybridInversion,
@@ -38,9 +40,11 @@ test_eigenvalues = [-19/24, -18/24, 8/24, 11/24]
 A_matrix_2 = np.diag(test_eigenvalues)
 b_vector = np.array([[0], [1], [1], [0]])/np.sqrt(2)
 
-problem = QuantumLinearSystemProblem(A_matrix_2, 
-                                     b_vector
-                                     )
+#problem = QuantumLinearSystemProblem(A_matrix_2, 
+#                                     b_vector
+#                                     )
+
+problem = ExampleQLSP(1/3)
 
 solution= QuantumLinearSystemSolver(problem)
 ideal_x = solution.ideal_x_statevector
@@ -100,3 +104,22 @@ with Session(service=service, backend=backend) as session:
                                                 )
 
     print(enhanced_result)
+
+
+
+data = {
+    'problem' : problem,
+    'cann' : result,
+    'Hybrid' : hybrid_result,
+    'Enhanced' : enhanced_result,
+}
+
+
+
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
+# Define the file path
+file_path = os.path.join(script_dir, file_name)
+
+with open(file_path, "w") as json_file:
+   json.dump(data, json_file)

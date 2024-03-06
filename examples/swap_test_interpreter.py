@@ -13,5 +13,5 @@ def st_post_processing(job_id):
     prob_0 = counts_01/(counts_01+counts_11)
     return np.sqrt(2*prob_0 - 1)
 
-fidelity = st_post_processing(job_id='cnghjhmj1613i2k3dke0')
+fidelity = st_post_processing(job_id='cqghp7g98a000084k70g')
 print(np.sqrt(2*(1-fidelity)))

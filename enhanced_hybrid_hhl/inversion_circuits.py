@@ -16,9 +16,9 @@ limitations under the License.
 
 import numpy as np
 from qiskit import QuantumCircuit
-from qiskit.extensions import RYGate
+from qiskit.circuit.library import RYGate
 
-def EnhancedHybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits) -> QuantumCircuit:
+def EnhancedHybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits, **kwargs) -> QuantumCircuit:
     """
     The function `HybridInversion` constructs a quantum circuit for hybrid inversion based on given
     eigenvalues, eigenbasis projections, and number of clock qubits.
@@ -33,9 +33,14 @@ def EnhancedHybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clo
     quantum circuit implementing a hybrid inversion operation. If the precision of the eigenvalue list is greater than
     num_clock_qubits, then the enhancement is automatically used to calculate the inversion angles.
     """
+    probability_threshold = 0
+    if 'probability_threshold' in kwargs.keys():
+        probability_threshold = kwargs['probability_threshold']
+    
     control_state_list, rotation_angle_list = enhanced_angle_processing_practical(eigenvalue_list, 
                                                                                   eigenbasis_projection_list, 
-                                                                                  num_clock_qubits)
+                                                                                  num_clock_qubits,
+                                                                                  probability_threshold=probability_threshold)
     circ = QuantumCircuit(num_clock_qubits+1, name='hybrid_inversion')
 
     for state, angle in zip(control_state_list, rotation_angle_list):

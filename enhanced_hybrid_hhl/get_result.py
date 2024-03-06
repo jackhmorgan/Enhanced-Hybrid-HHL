@@ -21,16 +21,11 @@ from .quantum_linear_system import QuantumLinearSystemProblem, HHL_Result, Quant
 from qiskit import transpile, QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.quantum_info import partial_trace, Operator
 from typing import Callable
+from qiskit_ibm_runtime import Sampler
 import numpy as np
 
-from qiskit import Aer
-simulator = Aer.get_backend('aer_simulator')
-
-
-from qiskit_ionq.ionq_provider import IonQProvider
-from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
-ionq_provider = IonQProvider(token='W8fkNnlIqaWDP83QCPTnP5HjoELVXMbP')
-ionq_simulator = ionq_provider.get_backend('ionq_simulator')
+from qiskit_aer import AerSimulator
+simulator = AerSimulator()
 
 def get_circuit_depth_result(backend):
   
@@ -122,10 +117,10 @@ def get_ionq_result_hhl(backend, statevector):
         hhl_circ.measure(0,0)
         hhl_circ.measure(-1,c_reg[0])
 
-        circuit = transpile(hhl_circ, ionq_simulator)
+        circuit = transpile(hhl_circ, backend=backend)
         
-        circuit_result = ionq_simulator.run(circuit).result().get_counts()
-        result_processed = st_post_processing(result = circuit_result)
+        circuit_result = backend.run(circuit)
+        result_processed = circuit.depth()
 
         result = HHL_Result()
         result.circuit_results = circuit_result
@@ -212,6 +207,7 @@ def get_swap_test_result(backend, statevector) -> Callable:
         for i in range(num_state_qubits):
             st_circ.cswap(-1,i,num_state_qubits+i)
         st_circ.h(-1)
+        return st_circ
 
     def st_post_processing(result = None, counts_01=None, counts_11=None):
         if not result==None:
@@ -221,7 +217,7 @@ def get_swap_test_result(backend, statevector) -> Callable:
         return np.sqrt(2*prob_0 - 1)
 
     def get_result(hhl_circ, problem) -> HHL_Result:
-        num_b_qubits = len(problem.b_vector)
+        num_b_qubits = int(np.log2(len(problem.b_vector)))
 
         st = SwapTest(num_b_qubits)
         q_reg = QuantumRegister(st.num_qubits-num_b_qubits)
@@ -232,13 +228,13 @@ def get_swap_test_result(backend, statevector) -> Callable:
 
         with hhl_circ.if_test((0,1)) as passed:
             hhl_circ.prepare_state(statevector, q_reg[:-1])
-            hhl_circ.append(st, range(-st.num_qubits))
+            hhl_circ.append(st, range(-st.num_qubits,0))
             hhl_circ.measure(-1,c_reg[0])
 
         circuit = transpile(hhl_circ, backend)
         
-        circuit_result = backend.run(circuit).result()
-        result_processed = st_post_processing(circuit_result.get_counts())
+        circuit_result = backend.run(circuit)
+        result_processed = circuit.depth()
 
         result = HHL_Result()
         result.circuit_results = circuit_result
@@ -277,4 +273,50 @@ def get_estimator_result(backend, observable):
         return result
     
     return get_result
+
+
+def get_session_result(session, statevector) -> Callable:
+    backend = session.service.get_backend(session.backend())
+    sampler = Sampler(session=session)
+    def SwapTest(num_state_qubits):
+        num_qubits = 2*num_state_qubits+1
+        st_circ = QuantumCircuit(num_qubits)
+        st_circ.h(-1)
+        for i in range(num_state_qubits):
+            st_circ.cswap(-1,i,num_state_qubits+i)
+        st_circ.h(-1)
+        return st_circ
+
+    def st_post_processing(result = None, counts_01=None, counts_11=None):
+        if not result==None:
+            counts_01 = result['01']
+            counts_11 = result['11']
+        prob_0 = counts_01/(counts_01+counts_11)
+        return np.sqrt(2*prob_0 - 1)
+
+    def get_result(hhl_circ, problem) -> HHL_Result:
+        num_b_qubits = int(np.log2(len(problem.b_vector)))
+
+        st = SwapTest(num_b_qubits)
+        q_reg = QuantumRegister(st.num_qubits-num_b_qubits)
+        c_reg = ClassicalRegister(1)
+
+        hhl_circ.add_register(q_reg)
+        hhl_circ.add_register(c_reg)
+
+        hhl_circ.prepare_state(statevector, q_reg[:-1])
+        hhl_circ.append(st, range(-st.num_qubits,0))
+        hhl_circ.measure(-1,c_reg[0])
+
+        circuit = transpile(hhl_circ, backend)
+        
+        circuit_result = sampler.run(circuit)
+        result_processed = circuit.depth()
+
+        result = HHL_Result()
+        result.circuit_results = circuit_result
+        result.results_processed = result_processed
+        return result
+    return get_result
+
 pass
