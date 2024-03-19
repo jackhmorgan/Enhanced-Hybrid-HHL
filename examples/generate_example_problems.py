@@ -6,8 +6,8 @@ import sys
 sys.path.append('C:/Users/19899/Documents/HHL/HybridInversion/Enhanced-Hybrid-HHL')
 from enhanced_hybrid_hhl import QuantumLinearSystemProblem
 
-test_eigenvalues = [-21/24, -20/24, -19/24, -18/24, -17/24, -16/24, -15/24, -14/24, 
-                    8/24, 9/24, 10/24, 11/24, 12/24, 13/24, 14/24, 14/24]
+test_eigenvalues = [-23/24, -22/24, -21/24, -20/24, -19/24, -18/24, -17/24, -16/24,
+                    4/24, 5/24, 6/24, 7/24, 8/24, 9/24, 10/24, 11/24]
 
 
 
@@ -55,11 +55,27 @@ def equal_superposition_eigenvectors(eigenvalue_list, matrix):
 
 A_matrix = hermitian_matrix2(test_eigenvalues)
 
-relevant_eigenvalues = [-18/24, 8/24]
 
-b_vector = equal_superposition_eigenvectors(relevant_eigenvalues, A_matrix).astype(np.float64)
+relevant_eigenvalues_list = [[-23/24, 11/24],
+                             [-22/24, 11/24],
+                             [-21/24, 11/24],
+                             [-20/24, 11/24],
+                             [-19/24, 11/24],
+                             [-18/24, 11/24],
+                             [-19/24, 4/24],
+                             [-19/24, 5/24],
+                             [-19/24, 6/24],
+                             [-19/24, 7/24],
+                             [-19/24, 9/24],                             
+                             [-19/24, 10/24]]
+problem_list = []
+for relevant_eigenvalues in relevant_eigenvalues_list:
 
-problem = QuantumLinearSystemProblem(A_matrix, b_vector)
 
-with open('examples/example_problem_16.json', 'w') as f:
-    json.dump(problem.__json__(), f)
+    b_vector = equal_superposition_eigenvectors(relevant_eigenvalues, A_matrix).astype(np.float64)
+
+    problem = QuantumLinearSystemProblem(A_matrix, b_vector)
+    problem_list.append(problem.__json__())
+
+with open('examples/example_problem_list.json', 'w') as f:
+    json.dump(problem_list, f)
