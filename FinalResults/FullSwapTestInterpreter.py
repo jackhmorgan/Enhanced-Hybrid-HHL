@@ -5,7 +5,10 @@ import numpy as np
 def st_post_processing(result):
     if '0 1' in result.keys():
         counts_01 = result['0 1']
-        counts_11 = result['1 1']
+        if '1 1' in result.keys():
+            counts_11 = result['1 1']
+        else:
+            counts_11 = 0
 
     else:
         counts_01 = result['1']
@@ -20,10 +23,10 @@ def st_post_processing(result):
 import json
 import os
 script_dir = os.path.dirname(os.path.realpath(__file__))
-#file_name = 'simulator_N4_medium_matrix_hhl.json'
-file_name = 'torino_N4_matrix_hhl.json'
+#file_name = 'simulator_N4_medgit ium_matrix_hhl.json'
+#file_name = 'full_aria1_emulator_small_matrix_hhl_threshold4.json'
 #file_name = 'benchmark_full_aria1_small_matrix_hhl.json'
-#file_name = 'ionq_aria_small_matrix_hhl.json'
+file_name = 'aria1_simulator_to_emulator_small_matrix_hhl_threshold1.json'
 # Define the file path
 file_path = os.path.join(script_dir, file_name)
 with open(file_path, 'r') as file:
@@ -54,21 +57,21 @@ for i, lam in enumerate(enhanced_results):
 
     fidelity = st_post_processing(canonical_results[i])
     canonical_fidelities.append(fidelity)
-    print('canonical fidelity : ', fidelity)
-    print('canonical error : ', np.sqrt(2*(1-fidelity)))
-    print('canonical depth : ', canonical_depths[i])
+    #print('canonical fidelity : ', fidelity)
+    #print('canonical error : ', np.sqrt(2*(1-fidelity)))
+    #print('canonical depth : ', canonical_depths[i])
 
     fidelity = st_post_processing(hybrid_results[i])
     hybrid_fidelities.append(fidelity)
-    print('hybrid fidelity : ', fidelity)
-    print('hybrid error : ', np.sqrt(2*(1-fidelity)))
-    print('hybrid depth : ', hybrid_depths[i])
+    #print('hybrid fidelity : ', fidelity)
+    #print('hybrid error : ', np.sqrt(2*(1-fidelity)))
+    #print('hybrid depth : ', hybrid_depths[i])
 
     fidelity = st_post_processing(enhanced_results[i])
     enhanced_fidelities.append(fidelity)
-    print('enhanced fidelity : ', fidelity)
-    print('enhanced error : ', np.sqrt(2*(1-fidelity)))
-    print('enhanced depth : ', enhanced_depths[i])
+    #print('enhanced fidelity : ', fidelity)
+    #print('enhanced error : ', np.sqrt(2*(1-fidelity)))
+    #print('enhanced depth : ', enhanced_depths[i])
 
 
 fidelity = np.average(canonical_fidelities)
