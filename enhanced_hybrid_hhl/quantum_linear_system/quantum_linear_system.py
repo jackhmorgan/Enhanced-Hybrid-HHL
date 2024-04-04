@@ -150,7 +150,11 @@ class QuantumLinearSystemProblem:
             state_preparation: The new :math:`\mathcal{A}` operator.
         """
         self._hamiltonian_simulation = hamiltonian_simulation
-        
+    
+    def __json__(self):
+        return {'A_matrix': self.A_matrix.tolist(), 
+                'b_vector': self.b_vector.tolist(), 
+                }
 
 class HHL_Result(AlgorithmResult):
     r"""The results object for amplitude estimation algorithms."""
