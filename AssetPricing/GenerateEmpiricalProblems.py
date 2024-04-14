@@ -12,6 +12,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from .quantum_linear_system import QuantumLinearSystemProblem as QLSP
+from qiskit.quantum_info import Statevector
 
 def GenerateEmpiricalProblems(utility_function: str, gamma:int, size:int = 4):
     """

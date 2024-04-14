@@ -18,7 +18,9 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import RYGate
 
-def EnhancedHybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits, **kwargs) -> QuantumCircuit:
+def EnhancedHybridInversion(eigenvalue_list, 
+                            eigenbasis_projection_list, 
+                            num_clock_qubits, **kwargs) -> QuantumCircuit:
     """
     The function `HybridInversion` constructs a quantum circuit for hybrid inversion based on given
     eigenvalues, eigenbasis projections, and number of clock qubits.
@@ -34,13 +36,17 @@ def EnhancedHybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clo
     num_clock_qubits, then the enhancement is automatically used to calculate the inversion angles.
     """
     probability_threshold = 0
+    exact_alpha = False
     if 'probability_threshold' in kwargs.keys():
         probability_threshold = kwargs['probability_threshold']
+    if 'exact_alpha' in kwargs.keys():
+        exact_alpha = kwargs['exact_alpha']
     
     control_state_list, rotation_angle_list = enhanced_angle_processing_practical(eigenvalue_list, 
                                                                                   eigenbasis_projection_list, 
                                                                                   num_clock_qubits,
-                                                                                  probability_threshold=probability_threshold)
+                                                                                  probability_threshold=probability_threshold,
+                                                                                  exact_alpha=exact_alpha)
     circ = QuantumCircuit(num_clock_qubits+1, name='hybrid_inversion')
 
     for state, angle in zip(control_state_list, rotation_angle_list):
@@ -125,11 +131,18 @@ def GrayCodeInversion(num_clock_qubits):
     from qiskit.circuit.library import ExactReciprocal
     er = ExactReciprocal(num_clock_qubits, 2*2**-num_clock_qubits, neg_vals=True)
     return er
+def alpha(delta, T):
+
+    coefficient = np.sqrt(2)*np.sin((np.pi)/(2*T))/T
+    numerator = abs(np.cos(delta/(2*T))*np.cos(delta/2))
+    denominator = abs(np.sin((delta+np.pi)/(2*T))*np.sin((delta-np.pi)/(2*T)))
+    return coefficient*numerator/denominator
 
 def enhanced_angle_processing_practical(eigenvalue_list,
                                         eigenbasis_projection_list, 
                                         num_clock_qubits, 
-                                        probability_threshold=0) -> tuple((list[int], list[float])):
+                                        probability_threshold=0,
+                                        exact_alpha=False) -> tuple((list[int], list[float])):
     """
     The function `enhanced_angle_processing_practical` calculates control state and rotation angles
     based on eigenvalues and eigenbasis projections.
@@ -172,14 +185,25 @@ def enhanced_angle_processing_practical(eigenvalue_list,
         state_floor = int(np.floor(state))
         state_ciel = int(np.ceil(state))
 
-        increment = abs(state_ciel-state_floor)
-        
-        for ctrl_state in [state_floor, state_ciel]:
-            if not ctrl_state == 0:
-                if increment==0:
-                    weight = 1/2
+        if state_floor == state_ciel and not state_floor == 0:
+            if state_floor < 0:
+                state_floor += int(2**clock)
+
+            if state_floor not in probability_dictionary.keys():
+                probability_dictionary[state_floor] = {}
+
+            probability_dictionary[state_floor][value] = projection
+
+        else:
+            increment = abs(state_ciel-state_floor)
+            for ctrl_state in [state_floor, state_ciel]:
+                if exact_alpha==True:
+                    T = 2**clock
+                    delta = 2*np.pi * abs(state - ctrl_state) / increment
+                    weight = alpha(delta,T)
                 else:
                     weight = 1-(abs(state - ctrl_state)/increment)
+
 
                 if ctrl_state < 0:
                     ctrl_state += int(2**clock)
@@ -188,13 +212,21 @@ def enhanced_angle_processing_practical(eigenvalue_list,
                     probability_dictionary[ctrl_state] = {}
 
                 probability_dictionary[ctrl_state][value] = projection*weight
-        
+
     amplitude_dictionary = {}
         
     for state, vectors in probability_dictionary.items():
+        if state == 0:
+            all_positive = all(value >= 0 for value in vectors.values())
+            all_negative = all(value <= 0 for value in vectors.values())
+            if not (all_positive or all_negative):
+                continue
         
         ave_eigenvalue = np.average(list(vectors.keys()), weights = list(vectors.values()))
-        final_amplitude = constant / ave_eigenvalue
+        boring_final_amplitude = constant / ave_eigenvalue
+        cool_final_amplitude = np.average([constant/value for value in vectors.keys()], weights= list(vectors.values()))
+        
+        final_amplitude = cool_final_amplitude
         if abs(sum(vectors.values())*final_amplitude) > probability_threshold:
             amplitude_dictionary[state] = final_amplitude
 

@@ -78,7 +78,8 @@ class Yalovetsky_preprocessing:
                  alpha: float = 50,
                  max_eigenvalue: float = None,
                  min_prob: float = None,
-                 **kwargs):
+                 **kwargs,
+                ):
         self.clock = clock
         if 'backend' in kwargs.keys():
             self.backend = kwargs['backend']
@@ -93,8 +94,7 @@ class Yalovetsky_preprocessing:
         if min_prob == None:
            min_prob = 2**-clock
         self.min_prob = min_prob
-
-
+    
     def get_result_backend(self):
         '''This method runs the QPE_QCL circuit with the specified backendand converts the results from two's complement. 
         The scale determines the time steps of the Hamiltonian simulation operator. '''
@@ -129,8 +129,11 @@ class Yalovetsky_preprocessing:
         self.hamiltonian_simulation = HamiltonianGate(self.problem.A_matrix, -2*np.pi*Gamma)
         results = self.get_result() # get the result
         abs_eigens = {abs(eig) : prob for eig, prob in results.items() if prob > self.min_prob}
-        test = abs_eigens[0] # determine the probability of measureing 0
-
+        
+        if 0 in abs_eigens.keys():
+            test = abs_eigens[0] # determine the probability of measureing 0
+        else:
+            test = 0
         # return a boolean if the eigenvalue is overapproximated
         if test>(1-self.min_prob):
             return True
@@ -312,10 +315,17 @@ class Lee_preprocessing:
         """
         if 'backend' in kwargs.keys():
             backend = kwargs['backend']
+            if 'shots' in kwargs.keys():
+                shots=kwargs['shots']
+            else:
+                shots=4000
             def get_result_preprocessing(circ):
                 transp = transpile(circ, backend)
-                print(transp.depth())
-                job = backend.run(transp)
+                self.depth = transp.depth()
+                if kwargs['noise_model'] != None:
+                    job = backend.run(transp, noise_model=kwargs['noise_model'], shots=shots)
+                else:
+                    job = backend.run(transp, shots=shots)
                 if self.wait_for_result:
                     result=job.result()
                     counts = result.get_counts()
@@ -388,7 +398,6 @@ class Lee_preprocessing:
             return eigenvalue_list, eigenbasis_projection_list
         else:
             return result_dict
-        
 
 class Iterative_QPE_Preprocessing:
     """
@@ -455,7 +464,7 @@ class Iterative_QPE_Preprocessing:
         backend = self.session.service.get_backend(self.session.backend())
         circ = self.construct_circuit(hamiltonian_simulation=self.hamiltonian_simulation, state_preparation=self.state_preparation)
         transp = transpile(circ, backend)
-        print('circuit depth = ', transp.depth())
+        self.depth = transp.depth()
         max_key = 2**circ.num_clbits
         result = sampler.run(transp).result()
         

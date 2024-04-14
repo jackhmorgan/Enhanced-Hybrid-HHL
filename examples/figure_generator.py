@@ -16,14 +16,23 @@ from enhanced_hybrid_hhl import (HHL,
 import numpy as np
 import json
 from qiskit_aer import AerSimulator
+from qiskit_ibm_runtime import QiskitRuntimeService, Session
+
+service = QiskitRuntimeService(
+    channel='ibm_quantum',
+    instance='ibm-q-ncsu/nc-state/amplitude-estima',
+    token='35e7316e04600dcc5e1b36a25b8eb9c61601d1456fe4d0ddb1604a8ef1847f0614516de700c3f5d9bac07141ade760115a07f1a706307d04fd16066d1a0dd109'
+)
+
+backend = service.get_backend('ibm_torino')
 
 simulator = AerSimulator()
 
-file_name = 'example_figure100notfixed.json'
+file_name = 'example_figuredepth.json'
 
 clock = 3
 
-lam_list = list(np.linspace(0,0.5,100, endpoint=False))[1::]
+lam_list = list(np.linspace(0,0.5,3, endpoint=False))[1::]
 cann_results = []
 hybrid_results = []
 enhanced_results = []
@@ -32,8 +41,9 @@ fixed_enhanced_results = []
 for lam in lam_list:
     problem = ExampleQLSP(lam=lam)
 
-    Cannonical_HHL = HHL(get_result_function='get_fidelity_result',
+    Cannonical_HHL = HHL(get_result_function='get_circuit_depth_result',
                         eigenvalue_inversion=CannonicalInversion,
+                        backend = backend
                         )
 
     result = Cannonical_HHL.estimate(problem=problem, 
@@ -52,9 +62,10 @@ for lam in lam_list:
     y_preprocessing=Yalovetsky_preprocessing(clock=clock,
                                              backend = simulator)
     
-    Yalovetsky_H_HHL = HHL(get_result_function='get_fidelity_result',
+    Yalovetsky_H_HHL = HHL(get_result_function='get_circuit_depth_result',
                         pre_processing=y_preprocessing.estimate,
                         eigenvalue_inversion=HybridInversion,
+                        backend=backend
                         )
 
     hybrid_result = Yalovetsky_H_HHL.estimate(problem=problem,
@@ -74,9 +85,10 @@ for lam in lam_list:
     e_preprocessing=Yalovetsky_preprocessing(clock=clock+2,
                                             backend = simulator)
 
-    Enhanced_H_HHL = HHL(get_result_function='get_fidelity_result',
+    Enhanced_H_HHL = HHL(get_result_function='get_circuit_depth_result',
                         pre_processing=e_preprocessing.estimate,
                         eigenvalue_inversion=EnhancedHybridInversion,
+                        backend=backend
                         )
     enhanced_result = Enhanced_H_HHL.estimate(problem=problem,
                                                 num_clock_qubits=clock,
@@ -91,9 +103,10 @@ for lam in lam_list:
                                     backend=simulator, 
                                     max_eigenvalue=1)
 
-    fixed_Enhanced_H_HHL = HHL(get_result_function='get_fidelity_result',
+    fixed_Enhanced_H_HHL = HHL(get_result_function='get_circuit_depth_result',
                         pre_processing=e_preprocessing,
                         eigenvalue_inversion=EnhancedHybridInversion,
+                        backend=backend,
                         )
     
     fixed_enhanced_result = Enhanced_H_HHL.estimate(problem=problem,
