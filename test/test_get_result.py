@@ -1,0 +1,107 @@
+import __future__
+
+import unittest
+import numpy as np
+from enhanced_hybrid_hhl import (ideal_preprocessing,
+                                 HybridInversion,
+                                 CanonicalInversion,
+                                 EnhancedHybridInversion,
+                                 ExampleQLSP,
+                                 QuantumLinearSystemProblem,
+                                 QuantumLinearSystemSolver,
+                                 HHL)
+from qiskit_aer import AerSimulator
+from qiskit_ionq import IonQProvider
+from qiskit_ibm_provider import IBMProvider
+from qiskit_ibm_runtime import Session, QiskitRuntimeService, RuntimeJob
+
+class TestHHL(unittest.TestCase):
+    '''Test HHL'''
+    def testFidelityResult(self):
+        test_problem = ExampleQLSP(0.33)
+        can_HHL = HHL(get_result_function="get_fidelity_result",
+                      eigenvalue_inversion=CanonicalInversion)
+        can_result = can_HHL.estimate(problem = test_problem,
+                  num_clock_qubits=3,
+                  max_eigenvalue=1)
+        can_fidelity = can_result.results_processed
+        self.assertTrue(can_fidelity > 0.8)
+
+    def testCircuitDepthResults(self):
+        provider = IBMProvider()
+        backend = provider.get_backend('ibm_torino')
+        test_problem = ExampleQLSP(0.33)
+        ideal_x_statevector = QuantumLinearSystemSolver(test_problem).ideal_x_statevector
+        can_HHL = HHL(get_result_function="get_circuit_depth_result", 
+                      backend = backend)
+        can_result = can_HHL.estimate(problem = test_problem,
+                  num_clock_qubits=3,
+                  max_eigenvalue=1,
+                  )
+        can_depth = can_result.results_processed
+        self.assertTrue(can_depth > 50)
+
+        can_HHL = HHL(get_result_function="get_circuit_depth_result_st", 
+                      eigenvalue_inversion=CanonicalInversion,
+                      backend= backend,
+                      statevector= ideal_x_statevector)
+        can_result = can_HHL.estimate(problem = test_problem,
+                  num_clock_qubits=3,
+                  max_eigenvalue=1,
+                  )
+        can_depth_st = can_result.results_processed
+        self.assertTrue(can_depth_st > can_depth)
+
+    def testSwapTestResult(self):
+        backend = AerSimulator()
+        test_problem = ExampleQLSP(0.33)
+        ideal_x_statevector = QuantumLinearSystemSolver(test_problem).ideal_x_statevector
+        can_HHL = HHL(get_result_function="get_swaptest_result", 
+                      backend = backend,
+                      statevector = ideal_x_statevector)
+        can_result = can_HHL.estimate(problem = test_problem,
+                  num_clock_qubits=3,
+                  max_eigenvalue=1)
+        can_result = can_result.results_processed
+        self.assertTrue(can_result > 0.8)
+
+    def testIonQResult(self):
+        ionq_provider = IonQProvider()
+        ionq_backend = ionq_provider.get_backend('ionq_simulator')
+
+        test_problem = ExampleQLSP(0.33)
+        ideal_x_statevector = QuantumLinearSystemSolver(test_problem).ideal_x_statevector
+        can_HHL = HHL(get_result_function="get_ionq_result", 
+                      backend = ionq_backend,
+                      statevector = ideal_x_statevector)
+        can_result = can_HHL.estimate(problem = test_problem,
+                  num_clock_qubits=3,
+                  max_eigenvalue=1,
+                  quantum_conditional_logic=False)
+        can_result = can_result.results_processed
+        self.assertTrue(can_result > 0.8)
+    
+    def testSessionResult(self):
+        service = QiskitRuntimeService()
+        session_backend = service.get_backend('ibmq_qasm_simulator')
+        test_problem = ExampleQLSP(0.33)
+        ideal_x_statevector = QuantumLinearSystemSolver(test_problem).ideal_x_statevector
+        with Session(service=service, backend=session_backend) as session:
+            can_HHL = HHL(get_result_function="get_session_result", 
+                        session = session,
+                        statevector = ideal_x_statevector,
+                        )
+            can_result = can_HHL.estimate(problem = test_problem,
+                    num_clock_qubits=3,
+                    max_eigenvalue=1,
+                    quantum_conditional_logic=False)
+            can_result = can_result
+            self.assertIsInstance(can_result.results_processed, int)
+            self.assertIsInstance(can_result.circuit_results, RuntimeJob)
+
+
+    
+
+if __name__ == '__main__':
+    unittest.main()
+        

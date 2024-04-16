@@ -23,9 +23,14 @@ from qiskit.quantum_info import Statevector
 from qiskit_algorithms import AlgorithmError
 
 from qiskit.circuit.library import ExactReciprocal
-from qiskit.providers import Backend
 from .quantum_linear_system import QuantumLinearSystemProblem as QLSP
-from .get_result import get_session_result, get_circuit_depth_result, get_circuit_depth_result_st, get_swap_test_result, get_fidelity_result, get_simulator_result, get_ionq_result_hhl
+from .get_result import (get_session_result, 
+                         get_circuit_depth_result, 
+                         get_circuit_depth_result_st, 
+                         get_swap_test_result, 
+                         get_fidelity_result, 
+                         get_simulator_result, 
+                         get_ionq_result_hhl)
 from abc import ABC
 from typing import Callable, Union
 
@@ -38,30 +43,30 @@ class HHL(ABC):
     '''
     def __init__(self,
                 get_result_function: str,
-                pre_processing: Callable = None,
+                preprocessing: Callable = None,
                 eigenvalue_inversion: Callable = None,
                 **kwargs,
                 ) -> None:
         """
         The `__init__` function initializes an object with three optional functions: `get_result`,
-        `pre_processing`, and `eigenvalue_inversion`.
+        `preprocessing`, and `eigenvalue_inversion`.
         
         :param get_result: A function that takes in the HHL circuit and the quantum linear system problem
         and returns an HHL_Result object. This function is responsible for executing the HHL algorithm and
         returning the result
         :type get_result: Callable
-        :param pre_processing: A function that takes in the quantum linear system problem and performs any
+        :param preprocessing: A function that takes in the quantum linear system problem and performs any
         necessary pre-processing steps. This could include calculating the eigenvalues of the matrix and
         projecting the vector |b> onto their respective eigenvectors. The function should return the
         eigenvalues and the projection of |b> onto the eigenv
-        :type pre_processing: Callable
+        :type preprocessing: Callable
         :param eigenvalue_inversion: The `eigenvalue_inversion` parameter is a function that takes in the
         eigenvalues and their respective eigenvectors and outputs the eigenvalue inversion sub-circuit. This
         sub-circuit is used in the HHL algorithm to perform the inversion of the eigenvalues
         :type eigenvalue_inversion: Callable
         """
         self._get_result = self._get_result_type(get_result_function, **kwargs) # import the result function from get_result
-        self._pre_processing = pre_processing
+        self._preprocessing = preprocessing
         self._eigenvalue_inversion = eigenvalue_inversion
 
     @property
@@ -83,22 +88,22 @@ class HHL(ABC):
         self._get_result = get_result
         
     @property
-    def pre_processing(self) -> Union[Callable, None]:
-        """Get pre_processing.
+    def preprocessing(self) -> Union[Callable, None]:
+        """Get preprocessing.
 
         Returns:
-            The pre_processing function to determine eigenvalues and eigenbasis projection.
+            The preprocessing function to determine eigenvalues and eigenbasis projection.
         """
-        return self._pre_processing
+        return self._preprocessing
     
-    @pre_processing.setter
-    def pre_processing(self, pre_processing: Callable) -> None:
-        """Set pre_processing.
+    @preprocessing.setter
+    def preprocessing(self, preprocessing: Callable) -> None:
+        """Set preprocessing.
 
         Args:
-            pre_processing: A function to determine eigenvalues and eigenbasis projection.
+            preprocessing: A function to determine eigenvalues and eigenbasis projection.
         """
-        self._pre_processing = pre_processing
+        self._preprocessing = preprocessing
     
     @property
     def eigenvalue_inversion(self) -> Union[Callable, None]:
@@ -244,10 +249,10 @@ class HHL(ABC):
         eigenvalue_list = None
         eigenbasis_projection_list = None
         
-        # If Hybrid HHL, perform preprocessing and construct inversion_circuit
+        # If Inversion circuit is set, perform preprocessing and construct inversion_circuit
         if getattr(self, 'eigenvalue_inversion', None) is not None:
-            if getattr(self, 'pre_processing', None) is not None:
-                eigenvalue_list, eigenbasis_projection_list = self.pre_processing(problem)
+            if getattr(self, 'preprocessing', None) is not None:
+                eigenvalue_list, eigenbasis_projection_list = self.preprocessing(problem)
                 if max_eigenvalue == None:
                     max_eigenvalue = max(eigenvalue_list, key = abs)
                 elif not max_eigenvalue in eigenvalue_list:
@@ -257,7 +262,7 @@ class HHL(ABC):
 
             else:
                 inversion_circuit = self.eigenvalue_inversion(num_clock_qubits)
-        # If Cannonical HHL, use Exact Reciprocal
+        # If no inversion circuit, use Gray Code
         else:
             inversion_circuit = ExactReciprocal(num_state_qubits=num_clock_qubits, scaling=2*2**-num_clock_qubits, neg_vals=True)    
 

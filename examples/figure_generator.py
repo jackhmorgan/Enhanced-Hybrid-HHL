@@ -1,6 +1,4 @@
-import sys
 import os
-sys.path.append('C:/Users/19899/Documents/HHL/HybridInversion/Enhanced-Hybrid-HHL')
 from enhanced_hybrid_hhl import (HHL,
                                  ExampleQLSP,
                                  EnhancedHybridInversion,
@@ -8,111 +6,89 @@ from enhanced_hybrid_hhl import (HHL,
                                  CannonicalInversion,
                                  Lee_preprocessing,
                                  Yalovetsky_preprocessing,
-                                 ideal_preprocessing,
-                                 QuantumLinearSystemProblem,
                                  ExampleQLSP,
-                                 QuantumLinearSystemSolver)
+                                 )
 
 import numpy as np
 import json
 from qiskit_aer import AerSimulator
 
+# Import simulator for fidelity calculation
 simulator = AerSimulator()
 
-file_name = 'example_figure100notfixed.json'
-
+# Set file path and number of clock qubits
+file_name = '0.json'
 clock = 3
 
+# choose values of lam. exclude 0 and 0.5
 lam_list = list(np.linspace(0,0.5,100, endpoint=False))[1::]
-cann_results = []
+
+#Create lists to store errors
+can_results = []
 hybrid_results = []
 enhanced_results = []
-fixed_enhanced_results = []
 
 for lam in lam_list:
+    #Generate Problem
     problem = ExampleQLSP(lam=lam)
 
-    Cannonical_HHL = HHL(get_result_function='get_fidelity_result',
-                        eigenvalue_inversion=CannonicalInversion,
+    #Canonical Fidelity
+    Canonical_HHL = HHL(get_result_function='get_fidelity_result',                        eigenvalue_inversion=CannonicalInversion,
                         )
-
-    result = Cannonical_HHL.estimate(problem=problem, 
+    result = Canonical_HHL.estimate(problem=problem, 
                                     num_clock_qubits=clock,
                                     max_eigenvalue=1,
                                     )
 
+    # Save canonical error
     fidelity = float(result.results_processed)
     error = np.sqrt(2*(1-fidelity))
-    cann_results.append(error)
+    can_results.append(error)
 
-    #y_preprocessing=Lee_preprocessing(num_eval_qubits=clock, 
-    #                                  backend = simulator, 
-    #                                max_eigenvalue=1)
-
-    y_preprocessing=Yalovetsky_preprocessing(clock=clock,
-                                             backend = simulator)
+    # Hybrid
+    Hybrid_preprocessing=Lee_preprocessing(num_eval_qubits=clock, 
+                                      backend = simulator, 
+                                      max_eigenvalue=1,
+                                      )
     
-    Yalovetsky_H_HHL = HHL(get_result_function='get_fidelity_result',
-                        pre_processing=y_preprocessing.estimate,
+    Hybrid_HHL = HHL(get_result_function='get_fidelity_result',
+                        pre_processing=Hybrid_preprocessing.estimate,
                         eigenvalue_inversion=HybridInversion,
                         )
 
-    hybrid_result = Yalovetsky_H_HHL.estimate(problem=problem,
-                                                num_clock_qubits=clock,
-                                                #max_eigenvalue=1,
-                                                )
+    hybrid_result = Hybrid_HHL.estimate(problem=problem,                                              num_clock_qubits=clock,
+                                              max_eigenvalue=1,
+                                              )
 
     fidelity = float(hybrid_result.results_processed)
     error = np.sqrt(2*(1-fidelity))
     hybrid_results.append(error)
-
-
-    #e_preprocessing=Lee_preprocessing(num_eval_qubits=clock+2, 
-    #                                backend=simulator, 
-    #                                max_eigenvalue=1)
     
-    e_preprocessing=Yalovetsky_preprocessing(clock=clock+2,
-                                            backend = simulator)
+    # Enhanced
+    Enhanced_preprocessing=Lee_preprocessing(num_eval_qubits=clock+2,
+                                             backend = simulator,
+                                             max_eigenvalue=1,
+                                             )
 
     Enhanced_H_HHL = HHL(get_result_function='get_fidelity_result',
-                        pre_processing=e_preprocessing.estimate,
+                        pre_processing=Enhanced_preprocessing.estimate,
                         eigenvalue_inversion=EnhancedHybridInversion,
                         )
     enhanced_result = Enhanced_H_HHL.estimate(problem=problem,
                                                 num_clock_qubits=clock,
-                                                #max_eigenvalue=1,
+                                                max_eigenvalue=1,
                                                 )
     
     fidelity = float(enhanced_result.results_processed)
     error = np.sqrt(2*(1-fidelity))
     enhanced_results.append(error)
 
-    e_preprocessing=Lee_preprocessing(num_eval_qubits=clock+2, 
-                                    backend=simulator, 
-                                    max_eigenvalue=1)
-
-    fixed_Enhanced_H_HHL = HHL(get_result_function='get_fidelity_result',
-                        pre_processing=e_preprocessing,
-                        eigenvalue_inversion=EnhancedHybridInversion,
-                        )
-    
-    fixed_enhanced_result = Enhanced_H_HHL.estimate(problem=problem,
-                                                num_clock_qubits=clock,
-                                                max_eigenvalue=1,
-                                                )
-    
-    fidelity = float(fixed_enhanced_result.results_processed)
-    error = np.sqrt(2*(1-fidelity))
-    fixed_enhanced_results.append(error)
 data = {
     'lam' : lam_list,
-    'Cann.' : cann_results,
+    'Can.' : can_results,
     'Hybrid' : hybrid_results,
     'Enhanced' : enhanced_results,
 }
-
-
-
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 # Define the file path

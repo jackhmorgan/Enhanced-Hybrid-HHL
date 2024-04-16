@@ -23,7 +23,7 @@ from qiskit.circuit.library import PhaseEstimation, StatePreparation
 from qiskit.quantum_info import Statevector
 from qiskit_algorithms import AlgorithmError
 from qiskit.providers import Backend
-from qiskit_ibm_runtime import Sampler
+from qiskit_ibm_runtime import Sampler, Session
 import numpy as np
 
 def ideal_preprocessing(problem: QuantumLinearSystemProblem):
@@ -43,9 +43,28 @@ def ideal_preprocessing(problem: QuantumLinearSystemProblem):
 
     return (eigenvalue_list, eigenbasis_projection_list)
 
+def list_preprocessing(eigenvalue_list: list, 
+                       eigenbasis_projection_list: list,
+                       ):
+    """
+    The 'list_preprocessing' function returns a function that can be used instead of the 'estimate' method
+    of the preprocessing algorithm classes. This can be used in lieu of repeating the preprocessing circuit
+    when the output of the other preprocessing class is already known.
+    
+    :param eigenvalue_list: The `eigenvalue_list` is the eigenvalue_list output of another preprocessing function
+    :param eigenbasis_projection_list: The `eigenbasis_projection_list` output of another preprocessing function
+    :return: The `list_preprocessing` function is returning the `list_preprocessing_function` function,
+    which takes a `QuantumLinearSystemProblem` as input and returns the `eigenvalue_list` and
+    `eigenbasis_projection_list` provided as arguments to the outer function.
+    """
+    
+    def list_preprocessing_function(problem:QuantumLinearSystemProblem):
+        return eigenvalue_list, eigenbasis_projection_list
+    return list_preprocessing_function
+
 # The `QCL_QPE_IBM` class implements the Quantum Clock Quantum Phase Estimation (QCL-QPE) algorithm on
 # IBM Quantum devices.
-class Yalovetsky_preprocessing:
+class Yalovetzky_preprocessing:
     """
         The function initializes the qcl-qpe preprocessing algorithm outlined in [1] with specified parameters.
         
@@ -70,22 +89,28 @@ class Yalovetsky_preprocessing:
         """
     def __init__(self,
                  clock: int,
-                 backend: Backend,
                  alpha: float = 50,
                  max_eigenvalue: float = None,
-                 min_prob: float = None):
+                 min_prob: float = None,
+                 **kwargs,
+                ):
         self.clock = clock
-        self.backend = backend
+        if 'backend' in kwargs.keys():
+            self.backend = kwargs['backend']
+            self.get_result = self.get_result_backend
+
+        elif 'session' in kwargs.keys():
+            self.session = kwargs['session']
+            self.get_result = self.get_result_session
+            
         self.alpha = alpha
         self.max_eigenvalue = max_eigenvalue
         if min_prob == None:
            min_prob = 2**-clock
         self.min_prob = min_prob
-
-
-    def get_result(self):
-        '''This method runs the QPE_QCL circuit with the specified backendand converts the results from two's complement. 
-        The scale determines the time steps of the Hamiltonian simulation operator. '''
+    
+    def get_result_backend(self):
+        '''This method runs the QCL_QPE circuit with the specified backend and converts the results from two's complement.'''
         
         circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
         backend = self.backend
@@ -98,6 +123,19 @@ class Yalovetsky_preprocessing:
         self.result = result_dict
         return result_dict
 
+    def get_result_session(self):
+        '''This method runs the QPE circuit with the ibm_runtime Sampler converts the results from two's complement. '''
+        sampler = Sampler(self.session)
+        backend = self.session.service.get_backend(self.session.backend())
+        circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
+        transp = transpile(circ, backend)
+        print('circuit depth = ', transp.depth())
+        max_key = 2**circ.num_clbits
+        result = sampler.run(transp).result()
+        
+        result_dict = {(key if 2*key<max_key else (key - max_key)) : value for key, value in result.quasi_dists[0].items()}
+
+        return result_dict
     
     def test_scale(self, scale: float):
         '''This method performs algorithm two from [1].'''
@@ -105,8 +143,11 @@ class Yalovetsky_preprocessing:
         self.hamiltonian_simulation = HamiltonianGate(self.problem.A_matrix, -2*np.pi*Gamma)
         results = self.get_result() # get the result
         abs_eigens = {abs(eig) : prob for eig, prob in results.items() if prob > self.min_prob}
-        test = abs_eigens[0] # determine the probability of measureing 0
-
+        
+        if 0 in abs_eigens.keys():
+            test = abs_eigens[0] # determine the probability of measureing 0
+        else:
+            test = 0
         # return a boolean if the eigenvalue is overapproximated
         if test>(1-self.min_prob):
             return True
@@ -221,17 +262,18 @@ class Yalovetsky_preprocessing:
             
         if not hasattr(self, "result"):
             self.get_result(self.scale)
-                
+  
         eigenvalue_list = [eig/(self.scale*2**(self.clock)) for eig in self.result.keys() if self.result[eig] > self.min_prob]
         eigenbasis_projection_list = [self.result[eig] for eig in self.result.keys() if self.result[eig] > self.min_prob]
         return eigenvalue_list, eigenbasis_projection_list
     
-# The `QPE_preprocessing` class is used for preprocessing in Quantum Phase Estimation algorithms,
+# The `Lee_preprocessing` class is used for preprocessing in Quantum Phase Estimation algorithms,
 # including circuit construction and eigenvalue estimation.
 class Lee_preprocessing:
     def __init__(self,
                  num_eval_qubits: int,
                  max_eigenvalue: float,
+                 wait_for_result: bool = True,
                  **kwargs
                  ):
         """
@@ -249,6 +291,7 @@ class Lee_preprocessing:
         """
         self.num_eval_qubits = num_eval_qubits
         self.max_eigenvalue = max_eigenvalue
+        self.wait_for_result = wait_for_result
         self.get_result = self.get_result_function(kwargs)
 
     def construct_circuit(self, 
@@ -286,15 +329,25 @@ class Lee_preprocessing:
         """
         if 'backend' in kwargs.keys():
             backend = kwargs['backend']
+            if 'shots' in kwargs.keys():
+                shots=kwargs['shots']
+            else:
+                shots=4000
             def get_result_preprocessing(circ):
                 transp = transpile(circ, backend)
-                print(transp.depth())
-                result = backend.run(transp).result()
-                counts = result.get_counts()
-                tot = sum(counts.values())
-                result_dict = {(int(key,2) if key[0]=='0' else (int(key,2) - (2**(len(key))))) : value / tot for key, value in counts.items()}
-       
-                return result_dict
+                self.depth = transp.depth()
+                if 'noise_model' in kwargs.keys():
+                    job = backend.run(transp, noise_model=kwargs['noise_model'], shots=shots)
+                else:
+                    job = backend.run(transp, shots=shots)
+                if self.wait_for_result:
+                    result=job.result()
+                    counts = result.get_counts()
+                    tot = sum(counts.values())
+                    result_dict = {(int(key,2) if key[0]=='0' else (int(key,2) - (2**(len(key))))) : value / tot for key, value in counts.items()}
+                    return result_dict
+                else:
+                    return job
             return get_result_preprocessing
         if 'session' in kwargs.keys():
             session = kwargs['session']
@@ -303,12 +356,14 @@ class Lee_preprocessing:
             def get_session_result_preprocessing(circ):
                 max_key = 2**circ.num_clbits 
                 transp = transpile(circ, backend)
-                print('circuit depth = ', transp.depth())
-                result = sampler.run(transp).result()
-                
-                result_dict = {(key if 2*key<max_key else (key - max_key)) : value for key, value in result.quasi_dists[0].items()}
-       
-                return result_dict
+                self.depth = transp.depth()
+                job = sampler.run(transp)
+                if self.wait_for_result:
+                    result = job.result()
+                    result_dict = {(key if 2*key<max_key else (key - max_key)) : value for key, value in result.quasi_dists[0].items()}
+                    return result_dict
+                else:
+                    return job
             return get_session_result_preprocessing
 
     
@@ -350,7 +405,208 @@ class Lee_preprocessing:
 
         circ = self.construct_circuit(hamiltonian_simulation, state_preparation)
         result_dict = self.get_result(circ)
-        min_prob = 2**-self.num_eval_qubits
-        eigenvalue_list = [eig/(scale*2**(self.num_eval_qubits)) for eig in result_dict.keys() if result_dict[eig] > min_prob]
-        eigenbasis_projection_list = [result_dict[eig] for eig in result_dict.keys() if result_dict[eig] > min_prob]
+        if self.wait_for_result:
+            min_prob = 2**-self.num_eval_qubits
+            eigenvalue_list = [eig/(scale*2**(self.num_eval_qubits)) for eig in result_dict.keys() if result_dict[eig] > min_prob]
+            eigenbasis_projection_list = [result_dict[eig] for eig in result_dict.keys() if result_dict[eig] > min_prob]
+            return eigenvalue_list, eigenbasis_projection_list
+        else:
+            return result_dict
+
+class Iterative_QPE_Preprocessing:
+    """
+        The function follows the iterative procedure to scale the QLSP outlined in [1] with specified parameters.
+        The actual phase estimation circuit is a standard QPE circuit as opposed to QCL_QPE in Yalovetsky_preprocessing.
+        
+        :param clock: The clock parameter represents the number of bits used to estimate the eigenvalues.
+        It is used to calculate the default minimum probability (min_prob) in the
+        __init__ method.
+        :param backend: The `backend` parameter is used to specify the IBM Backend object that will evaulate
+        the circuit.
+        :param alpha: The alpha parameter is the initial overestimate of the largest eigenvalue of the system.
+        This parameter is not needed if the max_eigenvalue is set.
+        :param max_eigenvalue: The `max_eigenvalue` parameter is used to set the maximum eigenvalue for
+        the quantum circuit. It determines the maximum value that can be measured for the eigenvalues of
+        the observable being measured. If not specified, alpha will be used to determine the maximum eigenvalue 
+        via algorithms 1 and 2 from [1].
+        :param min_prob: The `min_prob` parameter is used to set the minimum probability value. If
+        `min_prob` is not provided, it is set to `2**-clock`, where `clock` is another parameter
+
+        References:
+        [1]: Yalovetzky, R., Minssen, P., Herman, D., & Pistoia, M. (2021). 
+            NISQ-HHL: Portfolio optimization for near-term quantum hardware. 
+            `arXiv:2110.15958 <https://arxiv.org/abs/2110.15958>`_.
+        """
+    def __init__(self,
+                 clock: int,
+                 alpha: float = 50,
+                 max_eigenvalue: float = None,
+                 min_prob: float = None,
+                 **kwargs):
+        self.clock = clock
+        if 'backend' in kwargs.keys():
+            self.backend = kwargs['backend']
+            self.get_result = self.get_result_backend
+
+        elif 'session' in kwargs.keys():
+            self.session = kwargs['session']
+            self.get_result = self.get_result_session
+            
+        self.alpha = alpha
+        self.max_eigenvalue = max_eigenvalue
+        if min_prob == None:
+           min_prob = 2**-clock
+        self.min_prob = min_prob
+
+
+    def get_result_backend(self):
+        '''This method runs the QPE circuit on the specified backendand converts the results from two's complement. '''
+        
+        circ = self.construct_circuit(hamiltonian_simulation=self.hamiltonian_simulation, state_preparation=self.state_preparation)
+        backend = self.backend
+        transp = transpile(circ, backend)
+        result = backend.run(transp, shots=4000).result()
+        counts = result.get_counts()
+        tot = sum(counts.values())
+        # translate results into integer representation of the bitstring and adjust for two's compliment
+        result_dict = {(int(key,2) if key[0]=='0' else (int(key,2) - (2**(len(key))))) : value / tot for key, value in counts.items()}
+        self.result = result_dict
+        return result_dict
+
+    def get_result_session(self):
+        '''This method runs the QPE circuit with the ibm_runtime Sampler converts the results from two's complement. '''
+        sampler = Sampler(self.session)
+        backend = self.session.service.get_backend(self.session.backend())
+        circ = self.construct_circuit(hamiltonian_simulation=self.hamiltonian_simulation, state_preparation=self.state_preparation)
+        transp = transpile(circ, backend)
+        self.depth = transp.depth()
+        max_key = 2**circ.num_clbits
+        result = sampler.run(transp).result()
+        
+        result_dict = {(key if 2*key<max_key else (key - max_key)) : value for key, value in result.quasi_dists[0].items()}
+        self.result = result_dict
+        return result_dict
+    
+    def test_scale(self, scale: float):
+        '''This method performs algorithm two from [1].'''
+        Gamma = scale/(2**self.clock) # attempt to over approximate the eigenvalue
+        self.hamiltonian_simulation = HamiltonianGate(self.problem.A_matrix, -2*np.pi*Gamma)
+        results = self.get_result() # get the result
+        abs_eigens = {abs(eig) : prob for eig, prob in results.items() if prob > self.min_prob}
+        test = abs_eigens[0] # determine the probability of measureing 0
+
+        # return a boolean if the eigenvalue is overapproximated
+        if test>(1-self.min_prob):
+            return True
+        else:
+            return False
+    
+    def find_scale(self, alpha: float):
+        '''This method combines algorithm 1 and 2 [1]. Combined these algorithms determine the optimal time step parameter of the hamiltonian simulation, if a maximum eigenvalue or hamiltonian gate are not provided.'''
+        scale = 1/alpha # initial scale
+        self.hamiltonian_simulation = HamiltonianGate(self.problem.A_matrix, -2*np.pi*scale) # set gate
+        over_approximation = self.test_scale(scale) # verify over approximation
+        while over_approximation == False:
+            scale /= 2**(self.clock-1)
+            over_approximation = self.test_scale(scale)
+        
+        x = 0 
+        target = int((2**(self.clock-1)-1))
+        
+        # iteratively adjust scale until the largest eigenvalue is equal to the largest bitstring without overflow
+        while x != target:
+            self.hamiltonian_simulation = HamiltonianGate(self.problem.A_matrix, -2*np.pi*scale)
+            results = self.get_result()
+            eigens = {eig : prob for eig, prob in results.items() if prob > self.min_prob}  
+            x = abs(max(eigens.keys(), key=abs))
+            
+            if not x == 0:
+                scale /= x    
+            
+            scale *= target
+            
+        return scale
+    
+    def adjust_clock(self):
+        '''This method determined the minimum number of bits needed to distinguish the lowest eigenvalue of interest from 0,
+        which is the required number of bits for eigenvalue inversion'''
+        min_eig = None
+        # while the minimum eigenvalue is indistinguishable from zero, increase the clock by 1 bit.
+        while min_eig == None:
+            results = self.get_result(self.scale)
+            eigens = {eig : prob for eig, prob in results.items() if prob > self.min_prob}
+            test = 0
+            # if zero is a relevant eigenvalue, increase the clock.
+            if 0 in eigens.keys():
+                test = eigens[0]
+            if test > self.min_prob: 
+                self.clock += 1
+                self.min_prob /= 2 
+            # if the clock is at the set end point, break the loop.
+            elif self.clock >= self.max_clock:
+                min_eig = 0
+            # if the minimum eigenvalue is not zero, set the eigenvalue.
+            else:
+                min_eig = min(eigens.keys(), key=abs)
+    
+        return self.clock
+    
+    def construct_circuit(self, 
+                          hamiltonian_simulation: QuantumCircuit,
+                          state_preparation: QuantumCircuit,
+                          ):
+        """
+        The function constructs a quantum circuit by appending a state preparation circuit, a phase
+        estimation circuit, and measurement operations.
+        
+        :param hamiltonian_simulation: The `hamiltonian_simulation` parameter is an object that
+        represents the Hamiltonian simulation. It likely contains information about the Hamiltonian that
+        you want to simulate, such as the number of qubits it acts on and the specific gates or
+        operations that need to be applied
+        :param state_preparation: The `state_preparation` parameter is a quantum circuit that prepares
+        the initial state of the quantum system. It is applied to the qubits starting from index
+        `self.num_eval_qubits` up to the total number of qubits in the circuit
+        :return: a QuantumCircuit object.
+        """
+        circuit = QuantumCircuit(self.clock+hamiltonian_simulation.num_qubits, self.clock)
+        circuit.append(state_preparation, range(self.clock, circuit.num_qubits))
+        circuit.append(PhaseEstimation(self.clock, hamiltonian_simulation), circuit.qubits)
+        circuit.measure(list(range(self.clock))[::-1], range(self.clock))
+        return circuit
+    
+    def estimate(self, problem: QuantumLinearSystemProblem):
+        '''Returns a clock-bit estimation of the relevant eigenvalues, and the projection of 
+        |b> in the eigenbasis of A.'''
+        self.problem=problem
+
+         # If the state_preparation is not specified in the problem, use the standard StatePreparation
+        
+        if getattr(problem, 'state_preparation', None) is None:
+            
+            self.state_preparation = StatePreparation(Statevector(problem.b_vector))
+        
+        else:
+            self.state_preparation = problem.state_preparation
+        
+        # If the hamiltonian simulation is not specified in the problem, use the standard HamiltonianGate
+        if getattr(problem, 'hamiltonian_simulation', None) is None:
+            if self.max_eigenvalue == None:
+                self.scale = self.find_scale(self.alpha)
+            else:
+                self.scale = abs((0.5-2**-self.clock)/self.max_eigenvalue)
+                self.hamiltonian_simulation = HamiltonianGate(problem.A_matrix, -2*np.pi*self.scale)
+        
+        else:
+            self.hamiltonian_simulation = problem.hamiltonian_simulation
+
+        
+        if hasattr(self, "max_clock"):
+            self.adjust_clock()
+            self.scale = abs((0.5-2**-self.clock)/self.max_eigen)
+            
+        if not hasattr(self, "result"):
+            self.get_result()
+  
+        eigenvalue_list = [eig/(self.scale*2**(self.clock)) for eig in self.result.keys() if self.result[eig] > self.min_prob]
+        eigenbasis_projection_list = [self.result[eig] for eig in self.result.keys() if self.result[eig] > self.min_prob]
         return eigenvalue_list, eigenbasis_projection_list
