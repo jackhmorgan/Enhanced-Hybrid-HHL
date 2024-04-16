@@ -15,3 +15,6 @@ class TestHHL(unittest.TestCase):
                   max_eigenvalue=1)
         can_fidelity = abs(can_result.results_processed)
         self.assertTrue(can_fidelity > 0.5)
+
+if __name__ == '__main__':
+    unittest.main()
