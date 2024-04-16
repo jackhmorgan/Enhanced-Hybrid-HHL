@@ -24,10 +24,10 @@ from qiskit_aer import AerSimulator
 simulator = AerSimulator()
 
 # Define quantum linear system problem to be solved with HHL
-A_matrix = np.array([[ 0.5 , -0.25],
+a_matrix = np.array([[ 0.5 , -0.25],
         [-0.25,  0.5 ]])
 b_vector = np.array([[1.], [0.]])
-problem = QuantumLinearSystemProblem(A_matrix=A_matrix,
+problem = QuantumLinearSystemProblem(A_matrix=a_matrix,
                                      b_vector=b_vector)
 ```
 ### Step two: Choose the algorithm parameters
