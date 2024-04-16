@@ -43,14 +43,28 @@ def ideal_preprocessing(problem: QuantumLinearSystemProblem):
 
     return (eigenvalue_list, eigenbasis_projection_list)
 
-def list_preprocessing(eigenvalue_list, eigenbasis_projection_list):
+def list_preprocessing(eigenvalue_list: list, 
+                       eigenbasis_projection_list: list,
+                       ):
+    """
+    The 'list_preprocessing' function returns a function that can be used instead of the 'estimate' method
+    of the preprocessing algorithm classes. This can be used in lieu of repeating the preprocessing circuit
+    when the output of the other preprocessing class is already known.
+    
+    :param eigenvalue_list: The `eigenvalue_list` is the eigenvalue_list output of another preprocessing function
+    :param eigenbasis_projection_list: The `eigenbasis_projection_list` output of another preprocessing function
+    :return: The `list_preprocessing` function is returning the `list_preprocessing_function` function,
+    which takes a `QuantumLinearSystemProblem` as input and returns the `eigenvalue_list` and
+    `eigenbasis_projection_list` provided as arguments to the outer function.
+    """
+    
     def list_preprocessing_function(problem:QuantumLinearSystemProblem):
         return eigenvalue_list, eigenbasis_projection_list
     return list_preprocessing_function
 
 # The `QCL_QPE_IBM` class implements the Quantum Clock Quantum Phase Estimation (QCL-QPE) algorithm on
 # IBM Quantum devices.
-class Yalovetsky_preprocessing:
+class Yalovetzky_preprocessing:
     """
         The function initializes the qcl-qpe preprocessing algorithm outlined in [1] with specified parameters.
         
@@ -96,8 +110,7 @@ class Yalovetsky_preprocessing:
         self.min_prob = min_prob
     
     def get_result_backend(self):
-        '''This method runs the QPE_QCL circuit with the specified backendand converts the results from two's complement. 
-        The scale determines the time steps of the Hamiltonian simulation operator. '''
+        '''This method runs the QCL_QPE circuit with the specified backend and converts the results from two's complement.'''
         
         circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
         backend = self.backend
@@ -111,6 +124,7 @@ class Yalovetsky_preprocessing:
         return result_dict
 
     def get_result_session(self):
+        '''This method runs the QPE circuit with the ibm_runtime Sampler converts the results from two's complement. '''
         sampler = Sampler(self.session)
         backend = self.session.service.get_backend(self.session.backend())
         circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
@@ -253,7 +267,7 @@ class Yalovetsky_preprocessing:
         eigenbasis_projection_list = [self.result[eig] for eig in self.result.keys() if self.result[eig] > self.min_prob]
         return eigenvalue_list, eigenbasis_projection_list
     
-# The `QPE_preprocessing` class is used for preprocessing in Quantum Phase Estimation algorithms,
+# The `Lee_preprocessing` class is used for preprocessing in Quantum Phase Estimation algorithms,
 # including circuit construction and eigenvalue estimation.
 class Lee_preprocessing:
     def __init__(self,
@@ -322,7 +336,7 @@ class Lee_preprocessing:
             def get_result_preprocessing(circ):
                 transp = transpile(circ, backend)
                 self.depth = transp.depth()
-                if kwargs['noise_model'] != None:
+                if 'noise_model' in kwargs.keys():
                     job = backend.run(transp, noise_model=kwargs['noise_model'], shots=shots)
                 else:
                     job = backend.run(transp, shots=shots)
@@ -401,7 +415,8 @@ class Lee_preprocessing:
 
 class Iterative_QPE_Preprocessing:
     """
-        The function initializes the qcl-qpe preprocessing algorithm outlined in [1] with specified parameters.
+        The function follows the iterative procedure to scale the QLSP outlined in [1] with specified parameters.
+        The actual phase estimation circuit is a standard QPE circuit as opposed to QCL_QPE in Yalovetsky_preprocessing.
         
         :param clock: The clock parameter represents the number of bits used to estimate the eigenvalues.
         It is used to calculate the default minimum probability (min_prob) in the
@@ -445,8 +460,7 @@ class Iterative_QPE_Preprocessing:
 
 
     def get_result_backend(self):
-        '''This method runs the QPE_QCL circuit with the specified backendand converts the results from two's complement. 
-        The scale determines the time steps of the Hamiltonian simulation operator. '''
+        '''This method runs the QPE circuit on the specified backendand converts the results from two's complement. '''
         
         circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
         backend = self.backend
@@ -460,6 +474,7 @@ class Iterative_QPE_Preprocessing:
         return result_dict
 
     def get_result_session(self):
+        '''This method runs the QPE circuit with the ibm_runtime Sampler converts the results from two's complement. '''
         sampler = Sampler(self.session)
         backend = self.session.service.get_backend(self.session.backend())
         circ = self.construct_circuit(hamiltonian_simulation=self.hamiltonian_simulation, state_preparation=self.state_preparation)

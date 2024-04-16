@@ -17,7 +17,7 @@ limitations under the License.
 from .HHL import HHL
 from .inversion_circuits import (EnhancedHybridInversion, 
                                  HybridInversion, 
-                                 CannonicalInversion, 
+                                 CanonicalInversion, 
                                  GrayCodeInversion)
 
 from .quantum_linear_system import (RandomQLSP, 
@@ -27,7 +27,7 @@ from .quantum_linear_system import (RandomQLSP,
                                     HHL_Result)
 
 from .eigenvalue_preprocessing import (Lee_preprocessing, 
-                                       Yalovetsky_preprocessing, 
+                                       Yalovetzky_preprocessing, 
                                        ideal_preprocessing,
                                        list_preprocessing,
                                        Iterative_QPE_Preprocessing)
@@ -36,14 +36,14 @@ __all__ = [
     "HHL",
     "EnhancedHybridInversion",
     "HybridInversion",
-    "CannonicalInversion",
+    "CanonicalInversion",
     "GrayCodeInversion",
     "RandomQLSP",
     "ExampleQLSP",
     "QuantumLinearSystemSolver",
     "QuantumLinearSystemProblem",
     "HHL_Result",
-    "Yalovetsky_preprocessing",
+    "Yalovetzky_preprocessing",
     "Lee_preprocessing",
     "ideal_preprocessing",
     "list_preprocessing",

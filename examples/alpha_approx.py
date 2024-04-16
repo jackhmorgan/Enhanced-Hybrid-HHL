@@ -1,8 +1,9 @@
+# Python script to compare the exact calculation of alpha to our simple approximation
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 T=8
-
 
 def alpha(delta, T):
 

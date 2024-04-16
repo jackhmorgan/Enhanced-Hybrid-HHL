@@ -18,9 +18,10 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import RYGate
 
-def EnhancedHybridInversion(eigenvalue_list, 
-                            eigenbasis_projection_list, 
-                            num_clock_qubits, **kwargs) -> QuantumCircuit:
+def EnhancedHybridInversion(eigenvalue_list : list, 
+                            eigenbasis_projection_list: list, 
+                            num_clock_qubits : int, 
+                            **kwargs) -> QuantumCircuit:
     """
     The function `HybridInversion` constructs a quantum circuit for hybrid inversion based on given
     eigenvalues, eigenbasis projections, and number of clock qubits.
@@ -35,18 +36,20 @@ def EnhancedHybridInversion(eigenvalue_list,
     quantum circuit implementing a hybrid inversion operation. If the precision of the eigenvalue list is greater than
     num_clock_qubits, then the enhancement is automatically used to calculate the inversion angles.
     """
-    probability_threshold = 0
-    exact_alpha = False
+    # Set parameters for enhancement calculation if they are provided
+    probability_threshold = 0 # relavence threshold for the second layer of filtering
+    exact_alpha = False # Boolean variable. If true then use the exact function for alpha.
     if 'probability_threshold' in kwargs.keys():
         probability_threshold = kwargs['probability_threshold']
     if 'exact_alpha' in kwargs.keys():
         exact_alpha = kwargs['exact_alpha']
     
-    control_state_list, rotation_angle_list = enhanced_angle_processing_practical(eigenvalue_list, 
-                                                                                  eigenbasis_projection_list, 
-                                                                                  num_clock_qubits,
-                                                                                  probability_threshold=probability_threshold,
-                                                                                  exact_alpha=exact_alpha)
+    control_state_list, rotation_angle_list = Enhancement(eigenvalue_list, 
+                                                          eigenbasis_projection_list, 
+                                                          num_clock_qubits,
+                                                          probability_threshold=probability_threshold,
+                                                          exact_alpha=exact_alpha)
+    # Construct circuit
     circ = QuantumCircuit(num_clock_qubits+1, name='hybrid_inversion')
 
     for state, angle in zip(control_state_list, rotation_angle_list):
@@ -56,7 +59,10 @@ def EnhancedHybridInversion(eigenvalue_list,
 
     return circ
 
-def HybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubits) -> QuantumCircuit:
+def HybridInversion(eigenvalue_list : list, 
+                    eigenbasis_projection_list : list, 
+                    num_clock_qubits : int
+                    ) -> QuantumCircuit:
     """
     The function `HybridInversion` constructs a quantum circuit for hybrid inversion based on given
     eigenvalues, eigenbasis projections, and number of clock qubits.
@@ -71,11 +77,14 @@ def HybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubit
     quantum circuit implementing a hybrid inversion operation. If the precision of the eigenvalue list is greater than
     num_clock_qubits, then the enhancement is automatically used to calculate the inversion angles.
     """
-
+    # set t0 to reach the highest positive integer for the maximum eigenvalue
     scale = abs((0.5-2**-num_clock_qubits)/abs(max(eigenvalue_list, key=abs)))
 
+    # eigenvalues that pass the first layer of filtering
     eigenvalues = [eigen for i, eigen in enumerate(eigenvalue_list) if 0 < abs(eigen) < eigenbasis_projection_list[i]*(2**num_clock_qubits)]
     control_state_list = [round(value*scale*(2**(num_clock_qubits)-1)) for value in eigenvalues]
+
+    #construct circuit
     circ = QuantumCircuit(num_clock_qubits+1, name='hybrid_inversion')
 
     for state in control_state_list:
@@ -91,9 +100,9 @@ def HybridInversion(eigenvalue_list, eigenbasis_projection_list, num_clock_qubit
     return circ
 
 
-def CannonicalInversion(num_clock_qubits) -> QuantumCircuit:
+def CanonicalInversion(num_clock_qubits: int) -> QuantumCircuit:
     """
-    The function `CannonicalInversion` creates a quantum circuit for performing canonical inversion on a
+    The function `CannonicalInversion` creates a universally controlled rotation on a
     specified number of clock qubits.
     
     :param num_clock_qubits: The `num_clock_qubits` parameter represents the number of clock qubits in
@@ -117,7 +126,7 @@ def CannonicalInversion(num_clock_qubits) -> QuantumCircuit:
 
     return circ
 
-def GrayCodeInversion(num_clock_qubits):
+def GrayCodeInversion(num_clock_qubits : int):
     """
     The function `GrayCodeInversion` returns an ExactReciprocal object with specified parameters.
     
@@ -131,21 +140,36 @@ def GrayCodeInversion(num_clock_qubits):
     from qiskit.circuit.library import ExactReciprocal
     er = ExactReciprocal(num_clock_qubits, 2*2**-num_clock_qubits, neg_vals=True)
     return er
-def alpha(delta, T):
+def alpha(delta : float, 
+          T : float):
+    """
+    This Python function calculates the simplified equation 16 in [1].
+    
+    :param delta: Delta is the distance on the unit circle between the ideal eigenvalue and the control 
+    state in question.
+    :param T: Parameter determining the total distance between |0> and the maximum control state.
+    :return: The real valued amplitude of the entanglement alpha.
+
+    References:
+        [1]: Li, X., Phillips, C.,(2024). Detailed Error Analysis for the HHL Algorithm.
+        'https://arxiv.org/pdf/2401.17182.pdf'
+    """
 
     coefficient = np.sqrt(2)*np.sin((np.pi)/(2*T))/T
     numerator = abs(np.cos(delta/(2*T))*np.cos(delta/2))
     denominator = abs(np.sin((delta+np.pi)/(2*T))*np.sin((delta-np.pi)/(2*T)))
     return coefficient*numerator/denominator
 
-def enhanced_angle_processing_practical(eigenvalue_list,
-                                        eigenbasis_projection_list, 
-                                        num_clock_qubits, 
-                                        probability_threshold=0,
-                                        exact_alpha=False) -> tuple((list[int], list[float])):
+def Enhancement(eigenvalue_list : list[float],
+                eigenbasis_projection_list : list[float], 
+                num_clock_qubits : int, 
+                probability_threshold : float =0,
+                exact_alpha: bool =False,
+                ) -> tuple((list[int], list[float])):
     """
-    The function `enhanced_angle_processing_practical` calculates control state and rotation angles
-    based on eigenvalues and eigenbasis projections.
+    The function `enhanced_angle_processing_practical` uses the classical enhancement to calculate control states 
+    and rotation angles of a 'num_clock_qubits' bit eigenvalue inversion circuit based on eigenvalues and 
+    eigenbasis projection estimates that have greater bit precision.
     
     :param eigenvalue_list: Eigenvalues of a quantum state represented as a list of complex numbers
     :param eigenbasis_projection_list: The `eigenbasis_projection_list` parameter in the
@@ -161,31 +185,37 @@ def enhanced_angle_processing_practical(eigenvalue_list,
     particular state and its corresponding rotation angle should be included in the final output. If the
     product of the sum of probabilities for a state and its final amplitude is greater than the `,
     defaults to 0 (optional)
-    :return: The function `enhanced_angle_processing_practical` returns a tuple containing two lists:
-    `control_state_list` and `rotation_angle_list`. The `control_state_list` contains the control states
-    for the quantum circuit, and the `rotation_angle_list` contains the rotation angles corresponding to
-    each control state.
+    :return: The function `Enhancement` returns a tuple containing two lists:
+    `control_state_list` and `rotation_angle_list`, which are used to determine the control states and rotation angles
+    of MCRY gates used in enhanced eigenvalue inversion.
     """
     
     clock = num_clock_qubits
     scale = abs((0.5-2**-clock)/abs(max(eigenvalue_list, key=abs)))
     
-    constant = 1
+    constant = 1 # set initial constant C. Will be scaled based on relevant eigenvaluesS
     
     probability_dictionary = {}
-    final_amplitude_dictionary = {}
 
+    # Step 1: Determine amplitude of entanglement
     for value, projection in zip(eigenvalue_list, eigenbasis_projection_list):
 
+        # Discard empty eigenvalues. Only relevant if the eigenvalue_list has been calculated classically
         if projection==0:
             continue
 
+        # Calculate the adjacent k bit states and the distance between them
         state = value*scale*(2**(clock)-1)
-
         state_floor = int(np.floor(state))
         state_ciel = int(np.ceil(state))
+        increment = abs(state_ciel-state_floor)
 
-        if state_floor == state_ciel and not state_floor == 0:
+        # Discard 0
+        if state_floor == 0 and state_ciel == 0:
+            continue
+
+        # If perfectly estimated
+        elif increment==0:
             if state_floor < 0:
                 state_floor += int(2**clock)
 
@@ -195,7 +225,6 @@ def enhanced_angle_processing_practical(eigenvalue_list,
             probability_dictionary[state_floor][value] = projection
 
         else:
-            increment = abs(state_ciel-state_floor)
             for ctrl_state in [state_floor, state_ciel]:
                 if exact_alpha==True:
                     T = 2**clock
@@ -204,7 +233,7 @@ def enhanced_angle_processing_practical(eigenvalue_list,
                 else:
                     weight = 1-(abs(state - ctrl_state)/increment)
 
-
+                # Adjust for two's compliment
                 if ctrl_state < 0:
                     ctrl_state += int(2**clock)
 
@@ -216,23 +245,20 @@ def enhanced_angle_processing_practical(eigenvalue_list,
     amplitude_dictionary = {}
         
     for state, vectors in probability_dictionary.items():
+        # See if 0 is a valid control state
         if state == 0:
             all_positive = all(value >= 0 for value in vectors.values())
             all_negative = all(value <= 0 for value in vectors.values())
             if not (all_positive or all_negative):
                 continue
-        
-        ave_eigenvalue = np.average(list(vectors.keys()), weights = list(vectors.values()))
-        boring_final_amplitude = constant / ave_eigenvalue
-        cool_final_amplitude = np.average([constant/value for value in vectors.keys()], weights= list(vectors.values()))
-        
-        final_amplitude = cool_final_amplitude
+    
+        final_amplitude = np.average([constant/value for value in vectors.keys()], weights= list(vectors.values()))
         if abs(sum(vectors.values())*final_amplitude) > probability_threshold:
             amplitude_dictionary[state] = final_amplitude
 
     control_state_list, rotation_angle_list = [], []
 
-    constant = abs(1/max(amplitude_dictionary.values(), key=abs))
+    constant = abs(1/max(amplitude_dictionary.values(), key=abs)) # scale amplitude constant
     for state, amplitude in amplitude_dictionary.items():
         control_state_list.append(state)
         rotation_angle_list.append(2*np.arcsin(constant*amplitude))
