@@ -257,11 +257,22 @@ def get_swap_test_result(backend : Backend,
                          ) -> Callable:
 
     def st_post_processing(result = None, counts_01=None, counts_11=None):
-        if not result==None:
-            counts_01 = result['01']
-            counts_11 = result['11']
-        prob_0 = counts_01/(counts_01+counts_11)
-        return np.sqrt(2*prob_0 - 1)
+        if '0 1' in result.keys():
+            counts_01 = result['0 1']
+            if '1 1' in result.keys():
+                counts_11 = result['1 1']
+            else:
+                counts_11 = 0
+        else:
+            counts_01 = result['1']
+            counts_11 = result['3']
+
+        if counts_01 <= counts_11:
+            return 0
+        else:
+            prob_0 = counts_01/(counts_01+counts_11)
+            return np.sqrt(2*prob_0 - 1)
+
 
     def get_result(hhl_circ, problem) -> HHL_Result:
         num_b_qubits = int(np.log2(len(problem.b_vector)))

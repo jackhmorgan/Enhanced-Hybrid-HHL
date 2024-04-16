@@ -23,12 +23,7 @@ def st_post_processing(result):
 import json
 import os
 script_dir = os.path.dirname(os.path.realpath(__file__))
-#file_name = 'simulator_N4_medgit ium_matrix_hhl.json'
-#file_name = 'full_aria1_emulator_small_matrix_hhl_threshold4.json'
-#file_name = 'benchmark_full_aria1_small_matrix_hhl.json'
-#file_name = 'ionq_sim_to_aria1_N4_matrix_hhl.json'
-#file_name = 'simulator_to_torino_N2_matrix_hhl.json'
-file_name = 'aria1_simulator_to_emulator_small_matrix_hhl_threshold0.json'
+file_name = 'simulator_to_aria1_N2_matrix_hhl.json'
 # Define the file path
 file_path = os.path.join(script_dir, file_name)
 with open(file_path, 'r') as file:
@@ -53,8 +48,8 @@ canonical_fidelities = []
 hybrid_fidelities = []
 enhanced_fidelities = []
 
-hybrid_results = [{'0 0': 595, '0 1': 183, '1 0': 192, '1 1': 54}, {'0 0': 509, '0 1': 273, '1 0': 167, '1 1': 76}, {'0 0': 435, '0 1': 343, '1 0': 163, '1 1': 84}, {'0 1': 403, '0 0': 378, '1 0': 173, '1 1': 71}, {'0 1': 437, '0 0': 352, '1 0': 185, '1 1': 51}, {'0 1': 486, '0 0': 321, '1 0': 151, '1 1': 67}, {'0 1': 450, '0 0': 347, '1 0': 155, '1 1': 73}, {'0 1': 445, '0 0': 404, '1 0': 110, '1 1': 66}, {'0 1': 440, '0 0': 495, '1 1': 41, '1 0': 49}]
-enhanced_results = [{'0 0': 561, '1 0': 238, '0 1': 175, '1 1': 50}, {'0 0': 514, '0 1': 246, '1 0': 198, '1 1': 66}, {'0 0': 475, '0 1': 297, '1 0': 181, '1 1': 72}, {'0 1': 441, '0 0': 345, '1 0': 174, '1 1': 65}, {'0 1': 500, '0 0': 311, '1 0': 152, '1 1': 62}, {'0 1': 572, '0 0': 266, '1 0': 123, '1 1': 63}, {'0 1': 570, '0 0': 269, '1 0': 115, '1 1': 70}, {'0 1': 595, '0 0': 292, '1 1': 69, '1 0': 68}, {'0 1': 641, '0 0': 273, '1 1': 72, '1 0': 38}]
+#hybrid_results = [{'0 0': 595, '0 1': 183, '1 0': 192, '1 1': 54}, {'0 0': 509, '0 1': 273, '1 0': 167, '1 1': 76}, {'0 0': 435, '0 1': 343, '1 0': 163, '1 1': 84}, {'0 1': 403, '0 0': 378, '1 0': 173, '1 1': 71}, {'0 1': 437, '0 0': 352, '1 0': 185, '1 1': 51}, {'0 1': 486, '0 0': 321, '1 0': 151, '1 1': 67}, {'0 1': 450, '0 0': 347, '1 0': 155, '1 1': 73}, {'0 1': 445, '0 0': 404, '1 0': 110, '1 1': 66}, {'0 1': 440, '0 0': 495, '1 1': 41, '1 0': 49}]
+#enhanced_results = [{'0 0': 561, '1 0': 238, '0 1': 175, '1 1': 50}, {'0 0': 514, '0 1': 246, '1 0': 198, '1 1': 66}, {'0 0': 475, '0 1': 297, '1 0': 181, '1 1': 72}, {'0 1': 441, '0 0': 345, '1 0': 174, '1 1': 65}, {'0 1': 500, '0 0': 311, '1 0': 152, '1 1': 62}, {'0 1': 572, '0 0': 266, '1 0': 123, '1 1': 63}, {'0 1': 570, '0 0': 269, '1 0': 115, '1 1': 70}, {'0 1': 595, '0 0': 292, '1 1': 69, '1 0': 68}, {'0 1': 641, '0 0': 273, '1 1': 72, '1 0': 38}]
 
 for i, lam in enumerate(enhanced_results):
     #print('-----')
@@ -75,26 +70,22 @@ for i, lam in enumerate(enhanced_results):
 
     fidelity = st_post_processing(enhanced_results[i])
     enhanced_fidelities.append(fidelity)
-    print('enhanced fidelity : ', fidelity)
-    print('enhanced error : ', np.sqrt(2*(1-fidelity)))
-    print('enhanced depth : ', enhanced_depths[i])
+    #print('enhanced fidelity : ', fidelity)
+    #print('enhanced error : ', np.sqrt(2*(1-fidelity)))
+    #print('enhanced depth : ', enhanced_depths[i])
 
-fidelity = np.average(canonical_fidelities)
-print('ave can error : ',np.sqrt(2*(1-fidelity)))
-print('ave can depths : ',np.average(canonical_depths))
+errors = [np.sqrt(2*(1-fidelity)) for fidelity in canonical_fidelities]
+print('ave can error : ',np.average(errors))
+#print('ave can depths : ',np.average(canonical_depths))
 
-print('ave preprocessing depths : ', np.average(preprocessing_depths))
+#print('ave preprocessing depths : ', np.average(preprocessing_depths))
 
-ave_fidelity = np.average(hybrid_fidelities)
 errors = [np.sqrt(2*(1-fidelity)) for fidelity in hybrid_fidelities]
-print('ave hybrid error 0 : ',np.sqrt(2*(1-ave_fidelity)))
 print('ave hybrid error : ',np.average(errors))
-print('ave hybrid depths : ',np.average(hybrid_depths))
+#print('ave hybrid depths : ',np.average(hybrid_depths))
 
-print('ave enhanced preprocessing depths : ', np.average(enhanced_preprocessing_depths))
+#print('ave enhanced preprocessing depths : ', np.average(enhanced_preprocessing_depths))
 
-ave_fidelity = np.average(enhanced_fidelities)
 errors = [np.sqrt(2*(1-fidelity)) for fidelity in enhanced_fidelities]
-print('ave enhanced error 0 : ',np.sqrt(2*(1-ave_fidelity)))
 print('ave enhanced error : ',np.average(errors))
-print('ave enhanced depth : ',np.average(enhanced_depths))
+#print('ave enhanced depth : ',np.average(enhanced_depths))

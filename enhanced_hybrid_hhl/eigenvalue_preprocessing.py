@@ -462,7 +462,7 @@ class Iterative_QPE_Preprocessing:
     def get_result_backend(self):
         '''This method runs the QPE circuit on the specified backendand converts the results from two's complement. '''
         
-        circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
+        circ = self.construct_circuit(hamiltonian_simulation=self.hamiltonian_simulation, state_preparation=self.state_preparation)
         backend = self.backend
         transp = transpile(circ, backend)
         result = backend.run(transp, shots=4000).result()
