@@ -11,51 +11,61 @@ of the algorithm by observing the estimated state $\ket{x}$ with the projection 
 onto the ideal solution.
 
 ```python
-from enhanced_hybrid_hhl import QuantumLinearSystemProbelm
+from enhanced_hybrid_hhl import (HHL, 
+                                 Lee_preprocessing,  
+                                 HybridInversion, 
+                                 QuantumLinearSystemProblem, 
+                                 QuantumLinearSystemSolver,
+                                 EnhancedHybridInversion)
 import numpy as np
+from qiskit_aer import AerSimulator
 
-# Define linear system
-A_matrix = np.asmatrix([[0.5, 0.33],[0.33, 0.5]])
-b_vector = [1,0]
+# define the backend to run the circuits on
+simulator = AerSimulator()
 
-problem = QuantumLinearSystemProblem(A_matrix, b_vector)
+# Define quantum linear system problem to be solved with HHL
+A_matrix = np.array([[ 0.5 , -0.25],
+        [-0.25,  0.5 ]])
+b_vector = np.array([[1.], [0.]])
+problem = QuantumLinearSystemProblem(A_matrix=A_matrix,
+                                     b_vector=b_vector)
 ```
 ### Step two: Choose the algorithm parameters
 ```python
-from enhanced_hybrid_hhl import QCL_QPE_IBM, HybridInversion, QuantumLinearSystemSolver
+k = 3 # clock qubits for hhl.
+l = k+2 # clock qubits for enhanced preprocessing.
+min_prob = 2**-k # hybrid preprocessing relevance threshold.
+relevance_threshold = 2**-l # enhanced hybrid preprocessing relevance threshold.
+maximum_eigenvalue = 1 # Over estimate of largest eigenvalue in the system.
 
-from qiskit_aer import AerSimulator
-
-eigenvalue_precision = 6 # number of bits of the estimates
-simulator = AerSimulator() # backend to run the circuit
-
-# create instance of QCL_QPE class
-preprocessing_algorithm = QCL_QPE_IBM(eigenvalue_precision,
- simulator)
-
-# define the function that will be used by the HHL class
-preprocessing_function = preprocessing_algorithm.estimate
-inversion = HybridInversion
-
-# define operator to observe estimated solution.
-ideal_x_observable = QuantumLinearSystemSolver(example_problem).ideal_x_statevector.to_operator()
+get_result_type = 'get_swap_test_result'
+ideal_x_statevector = QuantumLinearSystemSolver(problem=problem).ideal_x_statevector
 ```
 
-### Step three: Create HHL class
+### Step three: Define Preprocessing and Inversion circuit classes
 ```python
-from enhanced_hybrid_hhl import HHL
+# In this example, we use the standard QPEA used by Lee et al.
+enhanced_preprocessing = Lee_preprocessing(num_eval_qubits=l,
+                                  max_eigenvalue= maximum_eigenvalue, 
+                                  backend=simulator).estimate
 
-enhanced_hybrid_hhl  = HHL('get_simulator_result',
-          preprocessing_function,
-          inversion,
+enhanced_eigenvalue_inversion = EnhancedHybridInversion
+```
+### Step four: Create the HHL Class
+```python
+enhanced_hybrid_hhl = HHL(get_result_function= get_result_type,
+          preprocessing= enhanced_preprocessing,
+          eigenvalue_inversion= enhanced_eigenvalue_inversion,
           backend=simulator,
-          statevector=ideal_x_observable)
+          statevector=ideal_x_statevector)
 ```
-### Step four: run the algorithm
+### Step five: Run the algorithm
 ```python
-hhl_result = hhl.estimate(problem)
+enhanced_hybrid_hhl_result = enhanced_hybrid_hhl.estimate(problem=problem,
+                                                          num_clock_qubits=k,
+                                                          max_eigenvalue=1)
 
-print(hhl_result)
+print(enhanced_hybrid_hhl_result)
 ```
 ## License
 
