@@ -32,4 +32,4 @@ for uf in utility_function_list:
         d_vector = np.kron([[0],[1]], calculate_d_vector(size = 4))
 
 
-        print(2-(2*(v_vector.inner(d_vector))))
+        print(2-(2*(np.real(v_vector.inner(d_vector)))))

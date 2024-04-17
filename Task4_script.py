@@ -7,6 +7,7 @@ from AssetPricing import (Generate_D_Minus_E_problem,
                           calculate_d_vector)
 from enhanced_hybrid_hhl import QuantumLinearSystemSolver
 from qiskit.quantum_info import Statevector
+import matplotlib.pyplot as plt
 
 file_name = 'benchmark_model_10_CRRA.txt'
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -16,28 +17,49 @@ file_path = os.path.join(script_dir, file_name)
 
 #np.savetxt(file_path, data)
 
-loaded_data = np.loadtxt(file_path).view(complex)
-statevector = GenerateBenchmarkModel(utility_function='CRRA',
-                                     gamma=10,
-                                     size = 4)
-data = statevector.data
-np.savetxt(file_path, data.view(float))
+benchmark_model = np.loadtxt(file_path).view(complex)
+#statevector = GenerateBenchmarkModel(utility_function='CRRA',
+#                                     gamma=10,
+#                                     size = 4)
+#data = statevector.data
+#np.savetxt(file_path, data.view(float))
 
-same = np.isclose(data, loaded_data)
-print(same)
-#d_vector = np.kron([[0],[1]], (calculate_d_vector(4)))
-#s1_vector = Statevector(d_vector)
+utility_function = 'IES'
+gamma = 2
 
-#s2_problem = Generate_D_Minus_E_problem(utility_function='CRRA', gamma=10, size=4)
-#s2_vector = QuantumLinearSystemSolver(s2_problem).ideal_x_statevector
+d_vector = np.kron([[0],[1]], (calculate_d_vector(4)))
+s1_vector = Statevector(d_vector)
 
-#s3_problem = Generate_D_Minus_E_problem(utility_function='IES', gamma=2, size=4)
-#s3_vector = QuantumLinearSystemSolver(s3_problem).ideal_x_statevector
+s2_vector = Statevector(benchmark_model)
 
-#def QuantumAmbiguity(s1, s2, alpha, delta):
-#    return (alpha*s1) + np.exp(delta*1j)*np.sqrt(1-(alpha**2))*s2
+s3_problem = Generate_D_Minus_E_problem(utility_function=utility_function, gamma=gamma, size=4)
+s3_vector = QuantumLinearSystemSolver(s3_problem).ideal_x_statevector
 
-#a= 0.9
-#for d in np.linspace(0,np.pi,5):
-#    s12_vector = QuantumAmbiguity(s1=s1_vector, s2=s2_vector, alpha=a, delta=d)
-#    print('delta = ',d,' Utility = ',s12_vector.inner(s3_vector))
+a3 = np.arccos(np.real(s3_vector.inner(s1_vector)))
+ab = np.arccos(np.real(s2_vector.inner(s1_vector)))
+
+s3 = 2 - (2*np.cos(a3))
+sb = 2 - (2*np.cos(ab))
+
+print(s3/sb)
+
+def QuantumAmbiguity(s1, s2, alpha, delta):
+    return (alpha*s1) + np.exp(delta*1j)*np.sqrt(1-(alpha**2))*s2
+
+alphas = list(np.linspace(0,1,5))
+deltas = list(np.linspace(0,np.pi,10))
+for a in alphas:
+    utilities = []
+    for d in deltas:
+        s12_vector = QuantumAmbiguity(s1=s1_vector, s2=s2_vector, alpha=a, delta=d)
+        s12_operator = s12_vector.to_operator()
+        utility = s3_vector.expectation_value(s12_operator)
+        utility *= s3/sb
+        utilities.append(abs(utility))
+        #print('delta = ',d,' Utility = ',s3_vector.expectation_value(s12_operator))
+    plt.plot(deltas, utilities, label='alpha = '+str(a))
+plt.title('Utility Function: '+utility_function+" Gamma: "+str(gamma))
+plt.xlabel('delta')
+plt.ylabel(r'$\langle \mathrm{tr}(P|S1,2(\alpha,\delta)\rangle P3)$', fontsize=16)
+plt.legend()
+plt.show()
