@@ -225,3 +225,4 @@ def GenerateBenchmarkModel(utility_function, gamma, size):
             final_state += weight*statevector
 
     return final_state
+

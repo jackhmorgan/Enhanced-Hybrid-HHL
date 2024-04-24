@@ -9,7 +9,8 @@ from enhanced_hybrid_hhl import (HHL,
                                  GrayCodeInversion, 
                                  QuantumLinearSystemProblem, 
                                  HHL_Result,
-                                 QuantumLinearSystemSolver)
+                                 QuantumLinearSystemSolver,
+                                )
 from qiskit.quantum_info import Statevector
 
 utility_function_list = ['IES', 'CRRA']
@@ -31,3 +32,6 @@ for uf in utility_function_list:
         dv_vector = QuantumLinearSystemSolver(dv_problem).ideal_x_statevector
 
         print(v_vector.inner(dv_vector))
+
+        d_vector = calculate_d_vector(size=4)
+        d_vector

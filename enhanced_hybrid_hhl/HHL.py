@@ -133,7 +133,7 @@ class HHL(ABC):
             return get_ionq_result_hhl(kwargs['backend'], kwargs['statevector'])
         
         if get_result_name == 'get_simulator_result':
-            return get_simulator_result(kwargs['statevector'])
+            return get_simulator_result(kwargs['operator'])
         
         if get_result_name == 'get_fidelity_result':
             return get_fidelity_result

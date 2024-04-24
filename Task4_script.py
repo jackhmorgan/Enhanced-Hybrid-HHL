@@ -46,18 +46,17 @@ print(s3/sb)
 def QuantumAmbiguity(s1, s2, alpha, delta):
     return (alpha*s1) + np.exp(delta*1j)*np.sqrt(1-(alpha**2))*s2
 
-alphas = list(np.linspace(0,1,5))
-deltas = list(np.linspace(0,np.pi,10))
+alphas = list(np.linspace(0,1,10))
+deltas = [0.1] #list(np.linspace(0,np.pi,10))
+utilities = []
 for a in alphas:
-    utilities = []
-    for d in deltas:
-        s12_vector = QuantumAmbiguity(s1=s1_vector, s2=s2_vector, alpha=a, delta=d)
-        s12_operator = s12_vector.to_operator()
-        utility = s3_vector.expectation_value(s12_operator)
-        utility *= s3/sb
-        utilities.append(abs(utility))
-        #print('delta = ',d,' Utility = ',s3_vector.expectation_value(s12_operator))
-    plt.plot(deltas, utilities, label='alpha = '+str(a))
+    s12_vector = QuantumAmbiguity(s1=s1_vector, s2=s2_vector, alpha=a, delta=0.1)
+    s12_operator = s12_vector.to_operator()
+    utility = s3_vector.expectation_value(s12_operator)
+    utility *= s3/sb
+    utilities.append(abs(utility))
+    #print('delta = ',d,' Utility = ',s3_vector.expectation_value(s12_operator))
+plt.plot(alphas, utilities)#, label='alpha = '+str(a))
 plt.title('Utility Function: '+utility_function+" Gamma: "+str(gamma))
 plt.xlabel('delta')
 plt.ylabel(r'$\langle \mathrm{tr}(P|S1,2(\alpha,\delta)\rangle P3)$', fontsize=16)
