@@ -21,7 +21,8 @@ from .inversion_circuits import (EnhancedHybridInversion,
                                  GrayCodeInversion)
 
 from .quantum_linear_system import (RandomQLSP, 
-                                    ExampleQLSP, 
+                                    ExampleQLSP,
+                                    ArbitraryExampleQLSP, 
                                     QuantumLinearSystemSolver, 
                                     QuantumLinearSystemProblem, 
                                     HHL_Result)
@@ -40,6 +41,7 @@ __all__ = [
     "GrayCodeInversion",
     "RandomQLSP",
     "ExampleQLSP",
+    "ArbitraryExampleQLSP",
     "QuantumLinearSystemSolver",
     "QuantumLinearSystemProblem",
     "HHL_Result",

@@ -42,7 +42,7 @@ class HHL(ABC):
     is determined by the choice of pre-processing algorithm and inversion circuit. 
     '''
     def __init__(self,
-                get_result_function: str,
+                get_result_function: str = None,
                 preprocessing: Callable = None,
                 eigenvalue_inversion: Callable = None,
                 **kwargs,
@@ -51,10 +51,9 @@ class HHL(ABC):
         The `__init__` function initializes an object with three optional functions: `get_result`,
         `preprocessing`, and `eigenvalue_inversion`.
         
-        :param get_result: A function that takes in the HHL circuit and the quantum linear system problem
-        and returns an HHL_Result object. This function is responsible for executing the HHL algorithm and
-        returning the result
-        :type get_result: Callable
+        :param get_result: String parameter to identify the function used to retrieve the hardware results.
+                can be set either when initializing the class or estimating a problem.
+        :type get_result_function: String
         :param preprocessing: A function that takes in the quantum linear system problem and performs any
         necessary pre-processing steps. This could include calculating the eigenvalues of the matrix and
         projecting the vector |b> onto their respective eigenvectors. The function should return the
@@ -65,7 +64,8 @@ class HHL(ABC):
         sub-circuit is used in the HHL algorithm to perform the inversion of the eigenvalues
         :type eigenvalue_inversion: Callable
         """
-        self._get_result = self._get_result_type(get_result_function, **kwargs) # import the result function from get_result
+        if not get_result_function==None:
+            self._get_result = self._get_result_type(get_result_function, **kwargs) # import the result function from get_result
         self._preprocessing = preprocessing
         self._eigenvalue_inversion = eigenvalue_inversion
 
@@ -138,7 +138,14 @@ class HHL(ABC):
             return get_ionq_result_hhl(kwargs['backend'], kwargs['statevector'])
         
         if get_result_name == 'get_simulator_result':
-            return get_simulator_result(kwargs['statevector'])
+            if 'statevector' in kwargs.keys():
+                if isinstance(kwargs['statevector'], Statevector):
+                    operator = kwargs['statevector'].to_operator()
+                else:
+                    operator = Statevector(kwargs['statevector']).to_operator()
+                return get_simulator_result(operator=operator)
+            else:
+                return get_simulator_result(kwargs['operator'])
         
         if get_result_name == 'get_fidelity_result':
             return get_fidelity_result
@@ -230,6 +237,7 @@ class HHL(ABC):
                  num_clock_qubits: Union[int, None] = 3,
                  max_eigenvalue: Union[float, None] = None,
                  quantum_conditional_logic: bool = True,
+                 get_result_function: str = None,
                  **kwargs
                  ):
         r''' 
@@ -242,9 +250,17 @@ class HHL(ABC):
                 the hamiltonian simulation gate if none is provided.
             quantum_conditional_logic: Boolean flag of whether the evaluation method
                 within get_result supports quantum conditional logic.
+            get_result_function: String parameter to identify the function used to retrieve the hardware results.
+                can be set either when initializing the class or estimating a problem.
         Returns:
             HHL_result
         '''
+
+        if not get_result_function == None:
+            self._get_result = self._get_result_type(get_result_function, **kwargs) # import the result function from get_result
+
+        if self._get_result == None:
+            raise AlgorithmError('get_result_function needs to be set either when initializing the class or estimating a problem')
 
         eigenvalue_list = None
         eigenbasis_projection_list = None

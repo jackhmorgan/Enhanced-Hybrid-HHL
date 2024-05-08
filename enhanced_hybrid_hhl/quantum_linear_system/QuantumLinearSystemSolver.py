@@ -57,10 +57,3 @@ def QuantumLinearSystemSolver(problem: QuantumLinearSystemProblem) -> HHL_Result
     result.ideal_x_statevector = ideal_x_statevector
     return result
 pass
-
-if __name__ == 'main':
-    A = np.array([[1,0.33],[0.33,1]])
-    b = [1,0]
-    example_problem = QuantumLinearSystemProblem(A_matrix = a,
-                                                 b_vector = b)
-    solution = QuantumLinearSystemSolver(example_problem)

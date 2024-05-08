@@ -49,6 +49,23 @@ def SwapTest(num_state_qubits : int)-> QuantumCircuit:
     st_circ.h(-1)
     return st_circ
 
+def st_post_processing(result):
+    if '0 1' in result.keys():
+        counts_01 = result['0 1']
+        if '1 1' in result.keys():
+            counts_11 = result['1 1']
+        else:
+            counts_11 = 0
+
+    else:
+        counts_01 = result['1']
+        counts_11 = result['3']
+    if counts_01 <= counts_11:
+        return 0
+    else:
+        prob_0 = counts_01/(counts_01+counts_11)
+        return np.sqrt(2*prob_0 - 1)
+
 def get_circuit_depth_result(backend: Backend) -> Callable:
     """
     The function `get_circuit_depth_result` takes a backend as input and returns a function that
@@ -63,13 +80,12 @@ def get_circuit_depth_result(backend: Backend) -> Callable:
     def get_result(hhl_circ : QuantumCircuit, 
                    problem : QuantumLinearSystemProblem,
                    ) -> HHL_Result:
-        num_b_qubits = int(np.log2(len(problem.b_vector)))
 
         circuit = transpile(hhl_circ, backend)
         
         result = HHL_Result()
         result.circuit_results = circuit
-        result.results_processed = circuit.depth()
+        result.circuit_depth = circuit.depth()
         return result
     return get_result
 
@@ -112,7 +128,7 @@ def get_circuit_depth_result_st(backend : Backend,
         
         result = HHL_Result()
         result.circuit_results = circuit
-        result.results_processed = circuit.depth()
+        result.circuit_depth = circuit.depth()
         return result
     return get_result
 
@@ -136,26 +152,6 @@ def get_ionq_result_hhl(backend : Backend,
     circuit and a problem as input and returns an `HHL_Result` object containing the circuit results and
     the number of results processed.
     """
-    def st_post_processing(result = None, counts_01=None, counts_11=None):
-        if not result==None:
-            if '0 1' in result.keys():
-                counts_01 = result['0 1']
-            else:
-                counts_01 = 0
-                
-            if '1 1' in result.keys():
-                counts_11 = result['1 1']
-            else:
-                if counts_01 == 0:
-                    counts_11 = 1
-                else:
-                    counts_11 = 0
-        
-        prob_0 = counts_01/(counts_01+counts_11)
-        if prob_0 == 0:
-            return 0
-        return np.sqrt(2*prob_0 - 1)
-
     def get_result(hhl_circ, problem) -> HHL_Result:
         num_b_qubits = int(np.log2(len(problem.b_vector)))
 
@@ -173,12 +169,12 @@ def get_ionq_result_hhl(backend : Backend,
 
         circuit = transpile(hhl_circ, backend=backend)
         
-        circuit_result = backend.run(circuit)
-        result_processed = circuit.depth()
+        job = backend.run(circuit)
+        circuit_depth = circuit.depth()
 
         result = HHL_Result()
-        result.circuit_results = circuit_result
-        result.results_processed = result_processed
+        result.job_id = job.job_id()
+        result.circuit_depth = circuit_depth
         return result
     return get_result
 
@@ -215,6 +211,7 @@ def get_fidelity_result(hhl_circuit: QuantumCircuit, problem: QuantumLinearSyste
     result = HHL_Result()
     result.circuit_results = circuit_results
     result.results_processed = result_processed
+    result.circuit_depth = circ.depth()
     
     return result
 
@@ -248,6 +245,7 @@ def get_simulator_result(observable: Operator) -> Callable:
         result = HHL_Result()
         result.circuit_results = circuit_results
         result.results_processed = result_processed
+        result.circuit_depth = circ.depth()
         
         return result
     return get_simulator_result_function
@@ -255,25 +253,7 @@ def get_simulator_result(observable: Operator) -> Callable:
 def get_swap_test_result(backend : Backend, 
                          statevector,
                          ) -> Callable:
-
-    def st_post_processing(result = None, counts_01=None, counts_11=None):
-        if '0 1' in result.keys():
-            counts_01 = result['0 1']
-            if '1 1' in result.keys():
-                counts_11 = result['1 1']
-            else:
-                counts_11 = 0
-        else:
-            counts_01 = result['1']
-            counts_11 = result['3']
-
-        if counts_01 <= counts_11:
-            return 0
-        else:
-            prob_0 = counts_01/(counts_01+counts_11)
-            return np.sqrt(2*prob_0 - 1)
-
-
+    
     def get_result(hhl_circ, problem) -> HHL_Result:
         num_b_qubits = int(np.log2(len(problem.b_vector)))
 
@@ -291,66 +271,20 @@ def get_swap_test_result(backend : Backend,
 
         circuit = transpile(hhl_circ, backend)
         
-        circuit_result = backend.run(circuit)
-        result_processed = st_post_processing(circuit_result.result().get_counts())
+        job = backend.run(circuit)
+        circuit_results = st_post_processing(job.result().get_counts())
 
         result = HHL_Result()
-        result.circuit_results = circuit_result
-        result.results_processed = result_processed
+        result.circuit_results = circuit_results
+        result.results_processed = st_post_processing(circuit_results)
+        result.job_id = job.job_id()
         return result
-    return get_result
-
-def get_estimator_result(backend, observable):
-
-    from qiskit_ibm_runtime import Estimator
-    from qiskit.quantum_info import Pauli
-    
-    estimator = Estimator(backend=backend)
-    
-    def get_result(hhl_circ, problem):
-
-        pauli_list = ['I' for _ in range(hhl_circ.num_qubits)]
-        pauli_list[-1] = 'Z'
-        norm_observable = Pauli("".join(pauli_list))
-
-        circuit = transpile(hhl_circ, backend)
-        job = estimator.run([circuit, circuit], [observable, norm_observable])
-        circuit_result = job.result().values[0]
-        norm_result = job.result().values[1]
-
-        processed_result = norm_result
-
-        if getattr(problem, 'post_processing', None) is not None:
-            processed_result = problem.post_processing(processed_result)
-        
-        result = HHL_Result()
-
-        result.circuit_results = circuit_result
-        result.results_processed = processed_result
-
-        return result
-    
     return get_result
 
 
 def get_session_result(session, statevector) -> Callable:
     backend = session.service.get_backend(session.backend())
     sampler = Sampler(session=session)
-    def SwapTest(num_state_qubits):
-        num_qubits = 2*num_state_qubits+1
-        st_circ = QuantumCircuit(num_qubits)
-        st_circ.h(-1)
-        for i in range(num_state_qubits):
-            st_circ.cswap(-1,i,num_state_qubits+i)
-        st_circ.h(-1)
-        return st_circ
-
-    def st_post_processing(result = None, counts_01=None, counts_11=None):
-        if not result==None:
-            counts_01 = result['01']
-            counts_11 = result['11']
-        prob_0 = counts_01/(counts_01+counts_11)
-        return np.sqrt(2*prob_0 - 1)
 
     def get_result(hhl_circ, problem) -> HHL_Result:
         num_b_qubits = int(np.log2(len(problem.b_vector)))
@@ -368,12 +302,12 @@ def get_session_result(session, statevector) -> Callable:
 
         circuit = transpile(hhl_circ, backend)
         
-        circuit_result = sampler.run(circuit)
-        result_processed = circuit.depth()
+        job = sampler.run(circuit)
 
         result = HHL_Result()
-        result.circuit_results = circuit_result
-        result.results_processed = result_processed
+        result.circuit_results = job.result().quasi_dists[0]
+        result.job_id = job.job_id()
+        result.circuit_depth = circuit.depth()
         return result
     return get_result
 
