@@ -17,6 +17,7 @@ limitations under the License.
 from .quantum_linear_system import QuantumLinearSystemProblem
 from qiskit.quantum_info import random_hermitian
 import numpy as np
+from scipy.stats import ortho_group
 
 def RandomQLSP(number_qubits: int,
                maximum_condition_number: float,
@@ -82,6 +83,53 @@ def ExampleQLSP(lam: float) -> QuantumLinearSystemProblem:
     A_matrix = np.asmatrix([[0.5, lam-0.5],[lam-0.5,0.5]])
     b_vector = [1,0]
     return QuantumLinearSystemProblem(A_matrix, b_vector)
+
+def ArbitraryExampleQLSP(eigenvalue_list: list[float], 
+                         relevant_eigenvalue_list: list[float]) -> QuantumLinearSystemProblem:
+    """
+    The function `ArbitraryExampleQLSP` generates a Quantum Linear System Problem using given
+    eigenvalues and relevant eigenvalues.
+    
+    :param eigenvalue_list: The `eigenvalue_list` parameter in the `ArbitraryExampleQLSP` function
+    represents a list of eigenvalues that will be used to construct a Hermitian matrix.
+    :type eigenvalue_list: list[float]
+    :param relevant_eigenvalue_list: The `relevant_eigenvalue_list` parameter is a list of eigenvalues
+    that are relevant for solving the quantum linear system problem. These eigenvalues will be used to
+    compute the b_vector
+    :type relevant_eigenvalue_list: list[float]
+    :return: The function `ArbitraryExampleQLSP` returns a `QuantumLinearSystemProblem` object, which is
+    created using the Hermitian matrix generated from the `eigenvalue_list` and a vector
+    that is an equal superposition of the eigenvectors corresponding to the `relevant_eigenvalue_list` of that matrix.
+    """
+    def hermitian_matrix(eigenvalues):
+        n = len(eigenvalues)
+        ortho = ortho_group.rvs(dim=n)
+        diag = np.diag(eigenvalues)
+        matrix = np.matmul(ortho, diag)
+        matrix = np.matmul(matrix, ortho.T)
+        return matrix
+    
+    def equal_superposition_eigenvectors(eigenvalue_list, matrix):
+        # Compute the eigenvectors of the matrix
+        eigenvalues, eigenvectors = np.linalg.eig(matrix)
         
+        # Initialize the superposition vector
+        superposition_vector = np.zeros_like(eigenvectors[:,0], dtype=complex)
+        
+        # Iterate over each eigenvalue and add its eigenvector to the superposition vector
+        for eigenvalue in eigenvalue_list:
+            index = np.abs(eigenvalues - eigenvalue).argmin()
+            superposition_vector += eigenvectors[:, index]
+        
+        # Normalize the superposition vector
+        superposition_vector /= np.linalg.norm(superposition_vector)
+        
+        return superposition_vector
+    
+    A_matrix = hermitian_matrix(eigenvalue_list)
+    b_vector = equal_superposition_eigenvectors(relevant_eigenvalue_list, A_matrix).astype(np.float64)
+
+    return QuantumLinearSystemProblem(A_matrix, b_vector)
+
 
 

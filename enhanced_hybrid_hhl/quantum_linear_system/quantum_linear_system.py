@@ -170,6 +170,8 @@ class HHL_Result(AlgorithmResult):
         self._rotation_angle_list: Union[list[float], None] = None
         self._post_processing: Union[Callable[[float], float], None] = None
         self._ideal_x_statevector: Union[Statevector, None] = None
+        self._circuit_depth: int
+        self._job_id: str
 
     @property
     def circuit_results(self) -> Union[list[dict[str, int]], dict[str, int], None]:
@@ -204,12 +206,12 @@ class HHL_Result(AlgorithmResult):
     @property
     def results_processed(self) -> float:
         """Return the results of the observation after the post-processing has been applied."""
-        return self._estimation_processed
+        return self._results_processed
 
     @results_processed.setter
     def results_processed(self, value: float) -> None:
         """Set the results of the observation after the post-processing has been applied."""
-        self._estimation_processed = value
+        self._results_processed = value
 
     @property
     def eigenbasis_projection_list(self) -> list[int]:
@@ -244,7 +246,7 @@ class HHL_Result(AlgorithmResult):
     @property
     def rotation_angle_list(self) -> list[float]:
         """Return the rotation angles used for eigenvalue inversion."""
-        return self._control_state_list
+        return self._rotation_angle_list
 
     @rotation_angle_list.setter
     def rotation_angle_list(self, rotation_angle_list: list[float]) -> None:
@@ -260,3 +262,23 @@ class HHL_Result(AlgorithmResult):
     def ideal_x_statevector(self, ideal_x_statevector: Statevector) -> None:
         """Set the classically computed statevector of the solution."""
         self._ideal_x_statevector = ideal_x_statevector
+
+    @property
+    def circuit_depth(self) -> float:
+        """Return the depth of the transpiled circuit."""
+        return self._circuit_depth
+
+    @circuit_depth.setter
+    def circuit_depth(self, value: float) -> None:
+        """Set the depth of the transpiled circuit."""
+        self._circuit_depth = value
+
+    @property
+    def job_id(self) -> str:
+        """Return the id of the job submitted to estimate the solution."""
+        return self._job_id
+
+    @job_id.setter
+    def job_id(self, value: str) -> None:
+        """Set the id of the job submitted to estimate the solution."""
+        self._job_id = value

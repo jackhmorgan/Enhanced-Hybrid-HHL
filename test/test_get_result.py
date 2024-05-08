@@ -51,7 +51,7 @@ class TestHHL(unittest.TestCase):
                   num_clock_qubits=3,
                   max_eigenvalue=1,
                   )
-        can_depth = can_result.results_processed
+        can_depth = can_result.circuit_depth
         self.assertTrue(can_depth > 50)
 
         can_HHL = HHL(get_result_function="get_circuit_depth_result_st", 
@@ -62,7 +62,7 @@ class TestHHL(unittest.TestCase):
                   num_clock_qubits=3,
                   max_eigenvalue=1,
                   )
-        can_depth_st = can_result.results_processed
+        can_depth_st = can_result.circuit_depth
         self.assertTrue(can_depth_st > can_depth)
 
     def testSwapTestResult(self):
@@ -109,7 +109,7 @@ class TestHHL(unittest.TestCase):
                     max_eigenvalue=1,
                     quantum_conditional_logic=False)
             can_result = can_result
-            self.assertIsInstance(can_result.results_processed, int)
+            self.assertIsInstance(can_result.circuit_depth, int)
             self.assertIsInstance(can_result.circuit_results, RuntimeJob)
 
 
@@ -117,4 +117,3 @@ class TestHHL(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-        
