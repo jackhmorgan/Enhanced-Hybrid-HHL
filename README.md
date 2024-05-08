@@ -1,7 +1,6 @@
 # Enhanced-Hybrid-HHL
-This project contains the framework to run the HHL, Hybrid HHL, and enhanced Hybrid HHL algorithms.
-The variant of the algorithm is determined by the choice of inversion circuit and 
-eigenvalue preprocessing parameter.
+This project contains code and example problems used to the Enhanced Hybrid HHL Algorithm [1]. For benchmarking purposes, the project can implement the standard HHL algorithm [2], the Hybrid HHL algorithm [3], as well as the variation of the Hybrid HHL algorithm proposed by [4]. The variant of the HHL class is determined by the choice of inversion circuit and 
+eigenvalue preprocessing parameter. 
 
 ## Example Implementation 
 ### Step one: Define a Quantum Linear System Problem
@@ -67,6 +66,19 @@ enhanced_hybrid_hhl_result = enhanced_hybrid_hhl.estimate(problem=problem,
 
 print(enhanced_hybrid_hhl_result)
 ```
+### References
+<a id="1">[1]</a> 
+Morgan, J., Ghysels, E., & Mohammadbagherpoor, H. (2024). An Enhanced Hybrid HHL Algorithm. arXiv preprint arXiv:2404.10103.
+
+<a id="2">[2]</a> 
+Harrow, A. W., Hassidim, A., & Lloyd, S. (2009). Quantum algorithm for linear systems of equations. Physical review letters, 103(15), 150502.
+
+<a id="3">[3]</a> 
+Lee, Y., Joo, J., & Lee, S. (2019). Hybrid quantum linear equation algorithm and its experimental test on IBM Quantum Experience. Scientific reports, 9(1), 4778.
+
+<a id="4">[4]</a> 
+Yalovetzky, R., Minssen, P., Herman, D., & Pistoia, M. (2021). Hybrid HHL with Dynamic Quantum Circuits on Real Hardware. arXiv preprint arXiv:2110.15958.
+
 ## License
 
 This project uses [Apache 2.0 License]([url](https://github.com/jackhmorgan/Enhanced-Hybrid-HHL/blob/main/LICENSE)https://github.com/jackhmorgan/Enhanced-Hybrid-HHL/blob/main/LICENSE)
