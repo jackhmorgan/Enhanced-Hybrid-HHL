@@ -170,11 +170,14 @@ def get_ionq_result_hhl(backend : Backend,
         circuit = transpile(hhl_circ, backend=backend)
         
         job = backend.run(circuit)
+        circuit_results = job.get_counts()
         circuit_depth = circuit.depth()
 
         result = HHL_Result()
         result.job_id = job.job_id()
         result.circuit_depth = circuit_depth
+        result.circuit_results = circuit_results
+        result.results_processed = st_post_processing(circuit_results)
         return result
     return get_result
 
@@ -272,7 +275,7 @@ def get_swap_test_result(backend : Backend,
         circuit = transpile(hhl_circ, backend)
         
         job = backend.run(circuit)
-        circuit_results = st_post_processing(job.result().get_counts())
+        circuit_results = job.result().get_counts()
 
         result = HHL_Result()
         result.circuit_results = circuit_results

@@ -110,7 +110,7 @@ class TestHHL(unittest.TestCase):
                     quantum_conditional_logic=False)
             can_result = can_result
             self.assertIsInstance(can_result.circuit_depth, int)
-            self.assertIsInstance(can_result.circuit_results, RuntimeJob)
+            self.assertIsInstance(can_result.job_id, str)
 
 
     
