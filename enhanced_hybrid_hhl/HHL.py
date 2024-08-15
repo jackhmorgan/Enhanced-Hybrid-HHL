@@ -24,13 +24,15 @@ from qiskit_algorithms import AlgorithmError
 
 from qiskit.circuit.library import ExactReciprocal
 from .quantum_linear_system import QuantumLinearSystemProblem as QLSP
-from .get_result import (get_session_result, 
-                         get_circuit_depth_result, 
-                         get_circuit_depth_result_st, 
-                         get_swap_test_result, 
-                         get_fidelity_result, 
-                         get_simulator_result, 
-                         get_ionq_result_hhl)
+
+# from .get_result import (get_session_result, 
+#                          get_circuit_depth_result, 
+#                          get_circuit_depth_result_st, 
+#                          get_swap_test_result, 
+#                          get_fidelity_result, 
+#                          get_simulator_result, 
+#                          get_ionq_result_hhl)
+
 from abc import ABC
 from typing import Callable, Union
 
@@ -123,47 +125,47 @@ class HHL(ABC):
         """
         self._eigenvalue_inversion = eigenvalue_inversion
 
-    def _get_result_type(self, get_result_name, **kwargs):
-        ''' Import a callable from get_result.py that inputs the hhl circuit and outputs an hhl result.'''
-        if get_result_name == 'get_circuit_depth_result':
-            return get_circuit_depth_result(kwargs['backend'])
+    # def _get_result_type(self, get_result_name, **kwargs):
+    #     ''' Import a callable from get_result.py that inputs the hhl circuit and outputs an hhl result.'''
+    #     if get_result_name == 'get_circuit_depth_result':
+    #         return get_circuit_depth_result(kwargs['backend'])
 
-        if get_result_name == 'get_circuit_depth_result_st':
-            return get_circuit_depth_result_st(kwargs['backend'], kwargs['statevector'])
+    #     if get_result_name == 'get_circuit_depth_result_st':
+    #         return get_circuit_depth_result_st(kwargs['backend'], kwargs['statevector'])
 
-        if get_result_name == 'get_swaptest_result':
-            return get_swap_test_result(kwargs['backend'], kwargs['statevector'])
+    #     if get_result_name == 'get_swaptest_result':
+    #         return get_swap_test_result(kwargs['backend'], kwargs['statevector'])
         
-        if get_result_name == 'get_ionq_result':
-            return get_ionq_result_hhl(kwargs['backend'], kwargs['statevector'])
+    #     if get_result_name == 'get_ionq_result':
+    #         return get_ionq_result_hhl(kwargs['backend'], kwargs['statevector'])
         
-        if get_result_name == 'get_simulator_result':
-            if 'statevector' in kwargs.keys():
-                if isinstance(kwargs['statevector'], Statevector):
-                    operator = kwargs['statevector'].to_operator()
-                else:
-                    operator = Statevector(kwargs['statevector']).to_operator()
-                return get_simulator_result(operator=operator)
-            else:
-                return get_simulator_result(kwargs['operator'])
+    #     if get_result_name == 'get_simulator_result':
+    #         if 'statevector' in kwargs.keys():
+    #             if isinstance(kwargs['statevector'], Statevector):
+    #                 operator = kwargs['statevector'].to_operator()
+    #             else:
+    #                 operator = Statevector(kwargs['statevector']).to_operator()
+    #             return get_simulator_result(operator=operator)
+    #         else:
+    #             return get_simulator_result(kwargs['operator'])
         
-        if get_result_name == 'get_fidelity_result':
-            return get_fidelity_result
+    #     if get_result_name == 'get_fidelity_result':
+    #         return get_fidelity_result
         
-        if get_result_name == 'get_session_result':
-            return get_session_result(kwargs['session'], kwargs['statevector'])
+    #     if get_result_name == 'get_session_result':
+    #         return get_session_result(kwargs['session'], kwargs['statevector'])
 
-        else:
-            if 'statevector' in kwargs:
-                if 'backend' in kwargs:
-                    return get_swap_test_result(kwargs['backend'], kwargs['statevector'])
-                else: 
-                    return get_simulator_result(kwargs['statevector'])
-            else:
-                if 'backend' in kwargs:
-                    raise AlgorithmError('Backend provided without a statevector to compare result to')
-                else: 
-                    return get_simulator_result(kwargs['statevector'])
+    #     else:
+    #         if 'statevector' in kwargs:
+    #             if 'backend' in kwargs:
+    #                 return get_swap_test_result(kwargs['backend'], kwargs['statevector'])
+    #             else: 
+    #                 return get_simulator_result(kwargs['statevector'])
+    #         else:
+    #             if 'backend' in kwargs:
+    #                 raise AlgorithmError('Backend provided without a statevector to compare result to')
+    #             else: 
+    #                 return get_simulator_result(kwargs['statevector'])
 
     
     def construct_circuit(self, 
@@ -255,8 +257,9 @@ class HHL(ABC):
         Returns:
             HHL_result
         '''
-
-        if not get_result_function == None:
+        if isinstance(get_result_function, Callable):
+            self._get_result = get_result_function
+        elif not get_result_function == None:
             self._get_result = self._get_result_type(get_result_function, **kwargs) # import the result function from get_result
 
         if self._get_result == None:

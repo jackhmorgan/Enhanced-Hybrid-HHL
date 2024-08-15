@@ -23,7 +23,7 @@ from qiskit.circuit.library import PhaseEstimation, StatePreparation
 from qiskit.quantum_info import Statevector
 from qiskit_algorithms import AlgorithmError
 from qiskit.providers import Backend
-from qiskit_ibm_runtime import Sampler, Session
+#from qiskit_ibm_runtime import Sampler, Session
 import numpy as np
 
 def ideal_preprocessing(problem: QuantumLinearSystemProblem):
@@ -95,6 +95,9 @@ class Yalovetzky_preprocessing:
                  **kwargs,
                 ):
         self.clock = clock
+        if 'get_result' in kwargs.keys():
+            self.get_result = kwargs['get_result']
+
         if 'backend' in kwargs.keys():
             self.backend = kwargs['backend']
             self.get_result = self.get_result_backend
@@ -109,33 +112,33 @@ class Yalovetzky_preprocessing:
            min_prob = 2**-clock
         self.min_prob = min_prob
     
-    def get_result_backend(self):
-        '''This method runs the QCL_QPE circuit with the specified backend and converts the results from two's complement.'''
+    # def get_result_backend(self):
+    #     '''This method runs the QCL_QPE circuit with the specified backend and converts the results from two's complement.'''
         
-        circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
-        backend = self.backend
-        transp = transpile(circ, backend)
-        result = backend.run(transp, shots=4000).result()
-        counts = result.get_counts()
-        tot = sum(counts.values())
-        # translate results into integer representation of the bitstring and adjust for two's compliment
-        result_dict = {(int(key,2) if key[0]=='0' else (int(key,2) - (2**(len(key))))) : value / tot for key, value in counts.items()}
-        self.result = result_dict
-        return result_dict
+    #     circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
+    #     backend = self.backend
+    #     transp = transpile(circ, backend)
+    #     result = backend.run(transp, shots=4000).result()
+    #     counts = result.get_counts()
+    #     tot = sum(counts.values())
+    #     # translate results into integer representation of the bitstring and adjust for two's compliment
+    #     result_dict = {(int(key,2) if key[0]=='0' else (int(key,2) - (2**(len(key))))) : value / tot for key, value in counts.items()}
+    #     self.result = result_dict
+    #     return result_dict
 
-    def get_result_session(self):
-        '''This method runs the QPE circuit with the ibm_runtime Sampler converts the results from two's complement. '''
-        sampler = Sampler(self.session)
-        backend = self.session.service.get_backend(self.session.backend())
-        circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
-        transp = transpile(circ, backend)
-        print('circuit depth = ', transp.depth())
-        max_key = 2**circ.num_clbits
-        result = sampler.run(transp).result()
+    # def get_result_session(self):
+    #     '''This method runs the QPE circuit with the ibm_runtime Sampler converts the results from two's complement. '''
+    #     sampler = Sampler(self.session)
+    #     backend = self.session.service.get_backend(self.session.backend())
+    #     circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
+    #     transp = transpile(circ, backend)
+    #     print('circuit depth = ', transp.depth())
+    #     max_key = 2**circ.num_clbits
+    #     result = sampler.run(transp).result()
         
-        result_dict = {(key if 2*key<max_key else (key - max_key)) : value for key, value in result.quasi_dists[0].items()}
+    #     result_dict = {(key if 2*key<max_key else (key - max_key)) : value for key, value in result.quasi_dists[0].items()}
 
-        return result_dict
+    #     return result_dict
     
     def test_scale(self, scale: float):
         '''This method performs algorithm two from [1].'''
@@ -327,6 +330,8 @@ class Lee_preprocessing:
         It could be a specific quantum device or a simulator
         :return: The function `get_result_preprocessing` is being returned.
         """
+        if 'get_result_function' in kwargs.keys():
+            return kwargs['get_result_function']
         if 'backend' in kwargs.keys():
             backend = kwargs['backend']
             if 'shots' in kwargs.keys():
@@ -365,6 +370,14 @@ class Lee_preprocessing:
                 else:
                     return job
             return get_session_result_preprocessing
+        
+        if 'transpiler' in kwargs.keys():
+            transpiler = kwargs['transpiler']
+            backend = kwargs['backend']
+            def get_transpiler_result_preprocessing(circ):
+                transpiled = transpiler(circ, backend)
+                return transpiled
+            return get_transpiler_result_preprocessing
 
     
     def estimate(self, problem):
