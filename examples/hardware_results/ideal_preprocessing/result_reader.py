@@ -4,7 +4,7 @@ import numpy as np
 
 from qiskit_ionq import IonQProvider
 
-provider = IonQProvider('xbSZlxo1aSZCEW8CSMFKWg8AEPs5xuQ4')
+provider = IonQProvider()
 backend = provider.get_backend("ionq_simulator")
 
 def st_post_processing(result):

@@ -20,7 +20,6 @@ import numpy as np
 
 from qiskit.circuit.library import PhaseEstimation, StatePreparation, HamiltonianGate
 from qiskit.quantum_info import Statevector
-from qiskit_algorithms import AlgorithmError
 
 from qiskit.circuit.library import ExactReciprocal
 from .quantum_linear_system import QuantumLinearSystemProblem as QLSP
@@ -163,7 +162,7 @@ class HHL(ABC):
     #                 return get_simulator_result(kwargs['statevector'])
     #         else:
     #             if 'backend' in kwargs:
-    #                 raise AlgorithmError('Backend provided without a statevector to compare result to')
+    #                 raise ValueError('Backend provided without a statevector to compare result to')
     #             else: 
     #                 return get_simulator_result(kwargs['statevector'])
 
@@ -263,7 +262,7 @@ class HHL(ABC):
             self._get_result = self._get_result_type(get_result_function, **kwargs) # import the result function from get_result
 
         if self._get_result == None:
-            raise AlgorithmError('get_result_function needs to be set either when initializing the class or estimating a problem')
+            raise ValueError('get_result_function needs to be set either when initializing the class or estimating a problem')
 
         eigenvalue_list = None
         eigenbasis_projection_list = None
@@ -288,7 +287,7 @@ class HHL(ABC):
         # If the hamiltonian simulation is not specified in the problem, use the standard HamiltonianGate
         if getattr(problem, 'hamiltonian_simulation', None) is None:
             if max_eigenvalue == None:
-                raise AlgorithmError('An upper bound on the eigenvalues is needed')
+                raise ValueError('An upper bound on the eigenvalues is needed')
             
             scale = abs((0.5-2**-num_clock_qubits)/max_eigenvalue)
             hamiltonian_simulation = HamiltonianGate(problem.A_matrix, -2*np.pi*scale)

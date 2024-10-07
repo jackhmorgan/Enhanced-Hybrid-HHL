@@ -6,6 +6,7 @@ import json
 from enhanced_hybrid_hhl import (HHL, 
                                  EnhancedHybridInversion,
                                  HybridInversion,
+                                 CanonicalInversion,
                                  Lee_preprocessing,
                                  list_preprocessing,
                                  QuantumLinearSystemProblem,
@@ -19,9 +20,8 @@ from qiskit import transpile
 from iqm.qiskit_iqm import IQMProvider
 from iqm.qiskit_iqm import transpile_to_IQM
 
-api_token = 'ZyWH0jUPqz+MKyKeuqCBp7GsJY1XaZH7VtjNQslUFaMGaW5hu+l/aIAAQFaKDS+D'
 server_url = 'https://cocos.resonance.meetiqm.com/deneb'
-backend = IQMProvider(server_url, token=api_token).get_backend()
+backend = IQMProvider(server_url).get_backend()
 
 
 shots = 1024
@@ -63,13 +63,6 @@ def get_iqm_result(circuit: QuantumCircuit,
     hhl_circ = circuit
     c_reg = ClassicalRegister(2)
     hhl_circ.add_register(c_reg)
-
-    # hhl_circ.add_register(q_reg)
-    # hhl_circ.add_register(c_reg)
-
-    # hhl_circ.prepare_state(statevector, q_reg[:-1])
-    # hhl_circ.append(st, list(range(-st.num_qubits,0)))
-    # hhl_circ.measure(0,0)
     hhl_circ.measure(-1,c_reg[1])
 
     circuit = transpile_to_IQM(hhl_circ, backend=backend)
@@ -103,20 +96,20 @@ for iteration in range(2,5):
 
         '''Canonical'''
 
-        #Canonical_HHL = HHL(get_result_function='get_ionq_result',
-        #                    eigenvalue_inversion=CanonicalInversion,
-        #                    backend=backend,
-        #                    noise_model=noise_model,
-        #                    shots=shots,
-        #                    statevector = ideal_x)
-        #canonical_result = Canonical_HHL.estimate(problem=problem,
-        #                                          num_clock_qubits=k_qubits,
-        #                                          max_eigenvalue=1,
-        #                                          quantum_conditional_logic=False,
-        #                                         )
-        #canonical_ids.append(canonical_result.circuit_results.job_id())
-        #canonical_results.append(canonical_result.circuit_results.get_counts())
-        #canonical_depths.append(canonical_result.results_processed)
+        Canonical_HHL = HHL(get_result_function='get_ionq_result',
+                           eigenvalue_inversion=CanonicalInversion,
+                           backend=backend,
+                           noise_model=noise_model,
+                           shots=shots,
+                           statevector = ideal_x)
+        canonical_result = Canonical_HHL.estimate(problem=problem,
+                                                 num_clock_qubits=k_qubits,
+                                                 max_eigenvalue=1,
+                                                 quantum_conditional_logic=False,
+                                                )
+        canonical_ids.append(canonical_result.circuit_results.job_id())
+        canonical_results.append(canonical_result.circuit_results.get_counts())
+        canonical_depths.append(canonical_result.results_processed)
 
         '''Hybrid'''
         h_preprocessing=Lee_preprocessing(num_eval_qubits=k_qubits, 

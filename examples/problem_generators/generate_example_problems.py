@@ -2,8 +2,6 @@ import numpy as np
 from scipy.stats import ortho_group
 import json
 
-import sys
-sys.path.append('C:/Users/19899/Documents/HHL/HybridInversion/Enhanced-Hybrid-HHL')
 from enhanced_hybrid_hhl import QuantumLinearSystemProblem
 
 test_eigenvalues = [-21/24, -20/24, -19/24, -18/24,

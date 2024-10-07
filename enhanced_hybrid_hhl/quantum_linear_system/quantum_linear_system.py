@@ -20,8 +20,11 @@ from typing import Union, List
 
 from qiskit import QuantumCircuit
 from collections.abc import Callable
-from qiskit_algorithms import AlgorithmResult
 from qiskit.quantum_info import Statevector
+
+from abc import ABC
+import inspect
+import pprint
 
 class QuantumLinearSystemProblem:
     r'''Quantum Linear Systems Problem. Object that either
@@ -156,7 +159,7 @@ class QuantumLinearSystemProblem:
                 'b_vector': self.b_vector.tolist(), 
                 }
 
-class HHL_Result(AlgorithmResult):
+class HHL_Result(ABC):
     r"""The results object for amplitude estimation algorithms."""
 
     def __init__(self) -> None:
@@ -172,6 +175,48 @@ class HHL_Result(AlgorithmResult):
         self._ideal_x_statevector: Union[Statevector, None] = None
         self._circuit_depth: int
         self._job_id: str
+
+    def __str__(self) -> str:
+        result = {}
+        for name, value in inspect.getmembers(self):
+            if (
+                not name.startswith("_")
+                and not inspect.ismethod(value)
+                and not inspect.isfunction(value)
+                and hasattr(self, name)
+            ):
+
+                result[name] = value
+
+        return pprint.pformat(result, indent=4)
+
+    def combine(self, result: "HHLResult") -> None:
+        """
+        Any property from the argument that exists in the receiver is
+        updated.
+        Args:
+            result: Argument result with properties to be set.
+        Raises:
+            TypeError: Argument is None
+        """
+        if result is None:
+            raise TypeError("Argument result expected.")
+        if result == self:
+            return
+
+        # find any result public property that exists in the receiver
+        for name, value in inspect.getmembers(result):
+            if (
+                not name.startswith("_")
+                and not inspect.ismethod(value)
+                and not inspect.isfunction(value)
+                and hasattr(self, name)
+            ):
+                try:
+                    setattr(self, name, value)
+                except AttributeError:
+                    # some attributes may be read only
+                    pass
 
     @property
     def circuit_results(self) -> Union[list[dict[str, int]], dict[str, int], None]:

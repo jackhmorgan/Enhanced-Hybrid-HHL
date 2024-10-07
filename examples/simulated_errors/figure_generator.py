@@ -3,9 +3,8 @@ from enhanced_hybrid_hhl import (HHL,
                                  ExampleQLSP,
                                  EnhancedHybridInversion,
                                  HybridInversion,
-                                 CannonicalInversion,
+                                 CanonicalInversion,
                                  Lee_preprocessing,
-                                 Yalovetsky_preprocessing,
                                  ExampleQLSP,
                                  )
 
@@ -33,7 +32,8 @@ for lam in lam_list:
     problem = ExampleQLSP(lam=lam)
 
     #Canonical Fidelity
-    Canonical_HHL = HHL(get_result_function='get_fidelity_result',                        eigenvalue_inversion=CannonicalInversion,
+    Canonical_HHL = HHL(get_result_function='get_fidelity_result',                        
+                        eigenvalue_inversion=CanonicalInversion,
                         )
     result = Canonical_HHL.estimate(problem=problem, 
                                     num_clock_qubits=clock,

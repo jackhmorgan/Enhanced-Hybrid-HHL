@@ -6,9 +6,8 @@ from enhanced_hybrid_hhl import QuantumLinearSystemSolver, QuantumLinearSystemPr
 
 from iqm.qiskit_iqm import IQMProvider
 
-api_token = 'ZyWH0jUPqz+MKyKeuqCBp7GsJY1XaZH7VtjNQslUFaMGaW5hu+l/aIAAQFaKDS+D'
 server_url = 'https://cocos.resonance.meetiqm.com/deneb'
-backend = IQMProvider(server_url, token=api_token).get_backend()
+backend = IQMProvider(server_url).get_backend()
 for iteration in [0,1,3,4,5]:
     file_name = 'simulator_to_deneb_N2_matrix_hhl'+str(iteration)+'.json'
     script_dir = os.path.dirname(os.path.realpath(__file__))

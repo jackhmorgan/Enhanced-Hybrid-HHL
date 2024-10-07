@@ -32,7 +32,6 @@ file_path = os.path.join(script_dir, preprocessing_file_name)
 with open(file_path, 'r') as file:
     json_data = json.load(file)
 
-api_token = 'ZyWH0jUPqz+MKyKeuqCBp7GsJY1XaZH7VtjNQslUFaMGaW5hu+l/aIAAQFaKDS+D'
 server_url = 'https://cocos.resonance.meetiqm.com/deneb'
 backend = IQMProvider(server_url, token=api_token).get_backend()
 
