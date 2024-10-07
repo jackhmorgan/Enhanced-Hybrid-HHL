@@ -41,7 +41,7 @@ class QuantumLinearSystemProblem:
         
         if A_matrix is not None:
             try:     
-                self._A_matrix = np.asmatrix(A_matrix)
+                self._A_matrix = np.asarray(A_matrix)
             except:        
                 raise ValueError('A_Matrix must be ArrayLike')
 
@@ -60,14 +60,17 @@ class QuantumLinearSystemProblem:
         if b_vector is not None:
 
             try:     
-                self._b_vector = np.asmatrix(b_vector)
+                self._b_vector = np.asarray(b_vector)
             except:        
                 raise ValueError('b vector must be ArrayLike')
 
             if self._b_vector.shape[0] == 1:
                 self._b_vector = self.b_vector.T
 
-            if not self._b_vector.shape[1]==1:
+            if len(self._b_vector.shape)==2 and not self.b_vector.shape[1]==1:
+                raise ValueError('b_vector must be a vector')
+            
+            if len(self._b_vector.shape)>2:
                 raise ValueError('b_vector must be a vector')
             
             if not self._b_vector.shape[0] == self._A_matrix.shape[0]:

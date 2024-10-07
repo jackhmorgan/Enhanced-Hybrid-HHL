@@ -19,13 +19,23 @@ from qiskit.quantum_info import Statevector
 
 def QuantumLinearSystemSolver(problem: QuantumLinearSystemProblem) -> HHL_Result:
     
-    A_matrix = problem.A_matrix
-    if not type(A_matrix) == np.array:
+    A_matrix = np.array(problem.A_matrix)
+    if not isinstance(A_matrix, np.ndarray):
         raise ValueError('QuantumLinearSytemSolver requires an explicit A_matrix')
 
-    b_vector = problem.b_vector
-    if not type(b_vector) == np.array:
+    b_vector = np.array(problem.b_vector)
+    if not isinstance(b_vector, np.ndarray):
         raise ValueError('QuantumLinearSytemSolver requires an explicit b_vector')
+    
+    if not b_vector.ndim == 1:
+        if b_vector.ndim == 2:
+            if not b_vector.shape[1] == 1:
+                raise ValueError('b_vector must be a vector')
+        else:
+            raise ValueError('b_vector must be a vector')
+    
+    else:
+        b_vector.reshape(-1,1)
 
     A_eigen = np.linalg.eigh(A_matrix)
 
@@ -37,14 +47,14 @@ def QuantumLinearSystemSolver(problem: QuantumLinearSystemProblem) -> HHL_Result
 
     for i, amp in enumerate(b_eigen):
         eigenvalue_list.append(A_eigen[0][i])
-        eigenbasis_projection_list.append(abs(amp)[0,0])
+        eigenbasis_projection_list.append(abs(amp))
     
 
     x = np.linalg.solve(A_matrix, b_state)
     x_norm = np.linalg.norm(x)
     x_state = x/x_norm
     x_meas = []
-    for amp in x_state[:,0]:
+    for amp in x_state[:]:
         x_meas.append(abs(amp*np.conj(amp)))
     ideal_x_statevector = Statevector(x_state)
     circuit_results = x_meas

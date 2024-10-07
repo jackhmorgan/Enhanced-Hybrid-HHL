@@ -80,7 +80,7 @@ def ExampleQLSP(lam: float) -> QuantumLinearSystemProblem:
         `arxiv:1807.10651 <https://arxiv.org/abs/1807.10651>`_.
     """
     
-    A_matrix = np.asarray([[0.5, lam-0.5],[lam-0.5,0.5]])
+    A_matrix = np.array([[0.5, lam-0.5],[lam-0.5,0.5]])
     b_vector = [1,0]
     return QuantumLinearSystemProblem(A_matrix, b_vector)
 
