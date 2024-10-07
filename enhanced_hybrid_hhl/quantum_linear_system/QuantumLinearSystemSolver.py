@@ -14,19 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from .quantum_linear_system import QuantumLinearSystemProblem, HHL_Result
-from qiskit_algorithms.exceptions import AlgorithmError
 import numpy as np
 from qiskit.quantum_info import Statevector
 
 def QuantumLinearSystemSolver(problem: QuantumLinearSystemProblem) -> HHL_Result:
     
     A_matrix = problem.A_matrix
-    if not type(A_matrix) == np.matrix:
-        raise AlgorithmError('QuantumLinearSytemSolver requires an explicit A_matrix')
+    if not type(A_matrix) == np.array:
+        raise ValueError('QuantumLinearSytemSolver requires an explicit A_matrix')
 
     b_vector = problem.b_vector
-    if not type(b_vector) == np.matrix:
-        raise AlgorithmError('QuantumLinearSytemSolver requires an explicit b_vector')
+    if not type(b_vector) == np.array:
+        raise ValueError('QuantumLinearSytemSolver requires an explicit b_vector')
 
     A_eigen = np.linalg.eigh(A_matrix)
 

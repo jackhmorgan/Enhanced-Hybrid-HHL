@@ -25,8 +25,7 @@ from enhanced_hybrid_hhl import (ideal_preprocessing,
                                  HHL)
 from qiskit_aer import AerSimulator
 from qiskit_ionq import IonQProvider
-from qiskit_ibm_provider import IBMProvider
-from qiskit_ibm_runtime import Session, QiskitRuntimeService, RuntimeJob
+from qiskit_ibm_runtime import Session, QiskitRuntimeService
 
 class TestHHL(unittest.TestCase):
     '''Test HHL'''
@@ -41,8 +40,8 @@ class TestHHL(unittest.TestCase):
         self.assertTrue(can_fidelity > 0.8)
 
     def testCircuitDepthResults(self):
-        provider = IBMProvider()
-        backend = provider.get_backend('ibm_torino')
+        service = QiskitRuntimeService()
+        backend = service.backend('ibm_torino')
         test_problem = ExampleQLSP(0.33)
         ideal_x_statevector = QuantumLinearSystemSolver(test_problem).ideal_x_statevector
         can_HHL = HHL(get_result_function="get_circuit_depth_result", 
@@ -96,7 +95,7 @@ class TestHHL(unittest.TestCase):
     
     def testSessionResult(self):
         service = QiskitRuntimeService()
-        session_backend = service.get_backend('ibmq_qasm_simulator')
+        session_backend = service.least_busy(operational=True, simulator=True)
         test_problem = ExampleQLSP(0.33)
         ideal_x_statevector = QuantumLinearSystemSolver(test_problem).ideal_x_statevector
         with Session(service=service, backend=session_backend) as session:

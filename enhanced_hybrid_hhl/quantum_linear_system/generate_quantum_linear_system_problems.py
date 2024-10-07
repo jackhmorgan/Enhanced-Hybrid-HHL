@@ -53,7 +53,7 @@ def RandomQLSP(number_qubits: int,
             raise Exception('Suitable random hermitian not found after maximum number of iterations')
         
         # randomly draw hermitian matrix.
-        A_matrix = np.asmatrix(random_hermitian(size).data)
+        A_matrix = np.asarray(random_hermitian(size).data)
         b_vector = np.asarray(np.random.rand(size)).reshape((size,1))
         # check condition number
         A_eigen = np.linalg.eigvals(A_matrix)
@@ -80,7 +80,7 @@ def ExampleQLSP(lam: float) -> QuantumLinearSystemProblem:
         `arxiv:1807.10651 <https://arxiv.org/abs/1807.10651>`_.
     """
     
-    A_matrix = np.asmatrix([[0.5, lam-0.5],[lam-0.5,0.5]])
+    A_matrix = np.asarray([[0.5, lam-0.5],[lam-0.5,0.5]])
     b_vector = [1,0]
     return QuantumLinearSystemProblem(A_matrix, b_vector)
 

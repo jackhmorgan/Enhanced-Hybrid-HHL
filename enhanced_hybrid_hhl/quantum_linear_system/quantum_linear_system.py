@@ -84,7 +84,7 @@ class QuantumLinearSystemProblem:
 
     
     @property
-    def A_matrix(self) -> np.matrix | None:
+    def A_matrix(self) -> np.array | None:
         r"""Get the matrix :math:`\mathcal{A}` in the linear system problem.
 
         Returns:
@@ -93,7 +93,7 @@ class QuantumLinearSystemProblem:
         return self._A_matrix
 
     @A_matrix.setter
-    def A_matrix(self, A_matrix: np.matrix) -> None:
+    def A_matrix(self, A_matrix: np.array) -> None:
         r"""Set the :math:`\mathcal{A}` matrix, that encodes the amplitude to be estimated.
 
         Args:
@@ -102,7 +102,7 @@ class QuantumLinearSystemProblem:
         self._A_matrix = A_matrix
 
     @property
-    def b_vector(self) -> np.matrix | None:
+    def b_vector(self) -> np.array | None:
         r"""Get the :math:`\mathcal{A}` operator encoding the amplitude :math:`a`.
 
         Returns:
@@ -111,7 +111,7 @@ class QuantumLinearSystemProblem:
         return self._b_vector
 
     @b_vector.setter
-    def b_vector(self, b_vector: np.matrix) -> None:
+    def b_vector(self, b_vector: np.array) -> None:
         r"""Set the :math:`\mathcal{A}` operator, that encodes the amplitude to be estimated.
 
         Args:
@@ -129,7 +129,7 @@ class QuantumLinearSystemProblem:
             return self._state_preparation
         
     @state_preparation.setter
-    def state_preparation(self, state_preparation: np.matrix) -> None:
+    def state_preparation(self, state_preparation: np.array) -> None:
         r"""Set the :math:`\mathcal{A}` operator, that encodes the amplitude to be estimated.
 
         Args:

@@ -10,8 +10,8 @@ from qiskit.quantum_info import Statevector
 class QuantumLinearSystemSolverTest(unittest.TestCase):
     
     @data(
-        (np.matrix([[1, 0.3], [0.3, 1]]), np.matrix([[1], [0]]), Statevector([ 0.95782629+0.j, -0.28734789+0.j])),  # Example 1
-        (np.matrix([[1, -0.5], [-0.5, 1]]), np.matrix([[1], [0]]), Statevector([0.89442719+0.j, 0.4472136 +0.j])), # Example 2
+        (np.array([[1, 0.3], [0.3, 1]]), np.array([[1], [0]]), Statevector([ 0.95782629+0.j, -0.28734789+0.j])),  # Example 1
+        (np.array([[1, -0.5], [-0.5, 1]]), np.array([[1], [0]]), Statevector([0.89442719+0.j, 0.4472136 +0.j])), # Example 2
     )
     def test_solver_with_valid_problem(self, input_data):
         A_matrix, b_vector, x_statevector = input_data

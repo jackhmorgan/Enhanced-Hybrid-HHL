@@ -21,7 +21,6 @@ from qiskit import transpile, QuantumCircuit
 from qiskit.circuit.library import HamiltonianGate
 from qiskit.circuit.library import PhaseEstimation, StatePreparation
 from qiskit.quantum_info import Statevector
-from qiskit_algorithms import AlgorithmError
 from qiskit.providers import Backend
 #from qiskit_ibm_runtime import Sampler, Session
 import numpy as np
@@ -112,33 +111,33 @@ class Yalovetzky_preprocessing:
            min_prob = 2**-clock
         self.min_prob = min_prob
     
-    # def get_result_backend(self):
-    #     '''This method runs the QCL_QPE circuit with the specified backend and converts the results from two's complement.'''
+    def get_result_backend(self):
+        '''This method runs the QCL_QPE circuit with the specified backend and converts the results from two's complement.'''
         
-    #     circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
-    #     backend = self.backend
-    #     transp = transpile(circ, backend)
-    #     result = backend.run(transp, shots=4000).result()
-    #     counts = result.get_counts()
-    #     tot = sum(counts.values())
-    #     # translate results into integer representation of the bitstring and adjust for two's compliment
-    #     result_dict = {(int(key,2) if key[0]=='0' else (int(key,2) - (2**(len(key))))) : value / tot for key, value in counts.items()}
-    #     self.result = result_dict
-    #     return result_dict
+        circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
+        backend = self.backend
+        transp = transpile(circ, backend)
+        result = backend.run(transp, shots=4000).result()
+        counts = result.get_counts()
+        tot = sum(counts.values())
+        # translate results into integer representation of the bitstring and adjust for two's compliment
+        result_dict = {(int(key,2) if key[0]=='0' else (int(key,2) - (2**(len(key))))) : value / tot for key, value in counts.items()}
+        self.result = result_dict
+        return result_dict
 
-    # def get_result_session(self):
-    #     '''This method runs the QPE circuit with the ibm_runtime Sampler converts the results from two's complement. '''
-    #     sampler = Sampler(self.session)
-    #     backend = self.session.service.get_backend(self.session.backend())
-    #     circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
-    #     transp = transpile(circ, backend)
-    #     print('circuit depth = ', transp.depth())
-    #     max_key = 2**circ.num_clbits
-    #     result = sampler.run(transp).result()
+    def get_result_session(self):
+        '''This method runs the QPE circuit with the ibm_runtime Sampler converts the results from two's complement. '''
+        sampler = Sampler(self.session)
+        backend = self.session.service.get_backend(self.session.backend())
+        circ = self.construct_circuit(hamiltonian_gate=self.hamiltonian_simulation, state_preparation=self.state_preparation)
+        transp = transpile(circ, backend)
+        print('circuit depth = ', transp.depth())
+        max_key = 2**circ.num_clbits
+        result = sampler.run(transp).result()
         
-    #     result_dict = {(key if 2*key<max_key else (key - max_key)) : value for key, value in result.quasi_dists[0].items()}
+        result_dict = {(key if 2*key<max_key else (key - max_key)) : value for key, value in result.quasi_dists[0].items()}
 
-    #     return result_dict
+        return result_dict
     
     def test_scale(self, scale: float):
         '''This method performs algorithm two from [1].'''
@@ -290,7 +289,7 @@ class Lee_preprocessing:
         :param max_eigenvalue: The `max_eigenvalue` parameter represents an upper bound on the
         eigenvalues of the Hamiltonian matrix. It is used in the `estimate` method to scale the
         Hamiltonian simulation. If the `max_eigenvalue` is not provided and the problem does
-        not specify a Hamiltonian simulation gate, an `AlgorithmError` is raised
+        not specify a Hamiltonian simulation gate, an `ValueError` is raised
         """
         self.num_eval_qubits = num_eval_qubits
         self.max_eigenvalue = max_eigenvalue
@@ -392,10 +391,10 @@ class Lee_preprocessing:
         """
         # If hamiltonian_simulation is not specified in the problem, use the HamiltonianGate from qiskit
         # with the scale calculated by the max_eigenvalue parameter. If neither are specified,
-        # return an algorithm error
+        # return an error
         if getattr(problem, 'hamiltonian_simulation', None) is None:
             if self.max_eigenvalue == None:
-                raise AlgorithmError('An upper bound on the eigenvalues is needed')
+                raise ValueError('An upper bound on the eigenvalues is needed')
             
             scale = abs((0.5-2**-self.num_eval_qubits)/self.max_eigenvalue)
             hamiltonian_simulation = HamiltonianGate(problem.A_matrix, -2*np.pi*scale)
